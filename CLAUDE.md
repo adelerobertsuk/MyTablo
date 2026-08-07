@@ -1,0 +1,91 @@
+# ReadingTable
+
+iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled with your books.
+
+## Working with Adele
+- Adele is a **beginner** — explain concepts plainly, avoid unexplained jargon, and keep answers focused.
+- Be token-efficient: read only what's needed, keep explanations tight.
+
+## Architecture
+- **Pattern:** MVVM. Views observe `ObservableObject` view models. SwiftData for persistence.
+- **Concurrency:** prefer async/await. Avoid Combine (view models still import it but don't rely on it).
+- `ReadingTableApp.swift` is the entry point — builds the `TabView` and injects view models. (`ContentView.swift` is unused default template.)
+
+### Files
+- `Models/Book.swift` — SwiftData `@Model`s: `Book`, `CoffeeTableComposition`, `ComposedBook`.
+- `ViewModels/LibraryViewModel.swift` — add/delete/load books via ISBN.
+- `ViewModels/CoffeeTableCompositionViewModel.swift` — manage table arrangements (add/move/remove/z-order books).
+- `Services/BookMetadataProvider.swift` — protocol + `OpenLibraryMetadataService` (live) + `MockBookMetadataService` (test data).
+- `Views/LibraryView.swift` — Library tab UI.
+- `Views/CoffeeTableViewIntegrated.swift` — Table tab UI (drag/scale/rotate books, pick table surface).
+
+## Features
+- **Library tab:** enter ISBN → fetch title/author/cover from OpenLibrary → save. Grid of covers, delete via swipe or button.
+- **Table tab:** choose a table surface image, add books from library, drag/rotate/scale them; autosaves on every change. Optional "Snap to Grid" toggle rounds drag positions to a 40pt grid; double-tap a book to reset its rotation to 0.
+
+## Conventions
+- PascalCase types, camelCase members; 4-space indent; no force-unwrapping.
+- Use `DocumentationSearch` (xcode-tools MCP) for unfamiliar/new Apple APIs (Liquid Glass, FoundationModels, latest SwiftUI).
+- Build with `BuildProject` (xcode-tools MCP), not command-line xcodebuild.
+- Any change to a SwiftData `@Model` (adding/removing/renaming properties) must keep existing local records loadable — add new fields with defaults rather than making them required, so the persistent store doesn't crash on devices with existing data.
+
+## Roadmap (logged 2026-08-07)
+- [x] Default startup table: use `Kate-table-WhitePlaster` instead of `Kate-table-AntiqueWood`.
+- [x] Z-order fix: newly added books/decorations should always land on top, not underneath existing items.
+- [x] Top-of-table white gap fix: the six `Kate-table-*` surface photos have a soft transparent fade baked into their top ~19px; rendering now applies `.scaleEffect(1.04, anchor: .bottom)` before `.clipped()` to crop it out (TabloView.swift, CoffeeTableViewIntegrated.swift).
+- [x] Library: allow editing a book card in place (title, author, custom cover) — tap any cover in the Library grid to open `EditBookView`. Fixes blank cards from failed ISBN lookups.
+- [x] **Barcode scanner (VisionKit)** — `Views/BarcodeScannerView.swift`, wired into `AddBookView` via a "Scan Barcode" button that fills the ISBN field. Uses `DataScannerViewController` (EAN-13/EAN-8/UPC-E/Code128), checked with `.isSupported`/`.isAvailable` and shows a graceful fallback message when unavailable (confirmed working in Simulator, which has no camera). Requires `NSCameraUsageDescription` (added to project.pbxproj build settings). **Confirmed working on a real device 2026-08-07** — tested live on Kate's iPhone (paired over local network), scanned a real book barcode successfully.
+- Device note: Adele's own iPhone ("Adele's iPhone" in `xcrun devicectl list devices`) would not establish a data connection over cable during testing — charged fine but Xcode/devicectl never saw it (`tunnelState: unavailable`, no fresh `lastConnectionDate`), while `system_profiler SPUSBDataType` showed no iPhone on USB at all. Likely a charge-only cable or a data-blocking hub/port. Kate's phone ("iPhone" in the device list) was already paired over Wi-Fi and used instead. Worth revisiting with a different cable/port next time Adele's own device needs testing.
+- [ ] Camera scan: photograph a physical book's front cover to use as custom cover artwork. Also needs a physical device. **Raised again 2026-08-07** — user has "lots of books in the house that return blank artwork" from ISBN lookup, wants this as the fix instead of manually searching the internet for cover art. Growing priority.
+- [x] In-app ISBN search — already implemented via OpenLibrary, confirmed working live (tested with a real ISBN, returned correct title/author/cover).
+- [ ] Title search (type a book title instead of ISBN and get matching results to pick from) — explicitly deferred by user 2026-08-07 ("we'll leave that for now"), wants it added at a later date. Not yet built — distinct from ISBN lookup, needs a results-picker UI since a title can match multiple editions.
+- [x] **Snapshot & export** — `Views/TableSnapshotView.swift` (clean, chrome-free render of the composition via `ImageRenderer`) + `ShareSheet` (UIActivityViewController wrapper), wired to a new "Share" button in `TabloView`'s control bar. Verified working in Simulator — Share button renders the composition and presents the system share sheet without crashing. (The blank-white-screen moment seen mid-testing was a transient screenshot-during-transition artifact, not a real bug — confirmed by reloading and it was gone.)
+- [ ] Future idea for export: small greyed-out watermark of "our logo" on shared/exported images, with a paid option to remove it (monetization angle). Depends on Snapshot & export, which is now shipped — this could be picked up next.
+- [x] **Grid-snap + double-tap-to-straighten** for books on the table — "Snap to Grid" toggle button (`square.grid.2x2` icon) in Style view rounds drag position to a 40pt grid (`CoffeeTableViewIntegrated.swift`); double-tapping a book resets its rotation to 0 without moving it. Both verified working live in Simulator.
+- [ ] Quick-swap surface themes: gesture or menu to cycle table textures.
+- [x] **Sticker packs** — added "Coffee House" (21) and "Fall Desk" (16) as new tabs in `DecorationView.swift`'s `StickerPickerView`, alongside the existing "Desk Plants" tab (tabs-by-pack UI, `StickerPack` enum). Verified all three tabs render correctly in Simulator. Remaining packs not yet requested: Desk Supplies, Pastels Washi Tape, Witchy Desk Supplies, Ultimate Crystal Collection (94 stickers), plus the 33-card "Fall Oracle Deck" (different vibe, tarot-style — flagged as maybe not fitting the desk-decor theme). Source files in `~/Documents/Curio Design Assets/Stickers/`.
+- [ ] More Kate table textures: `~/Documents/Curio Design Assets/Table Surfaces/Kate TableSkapes/` has 7 unimported "-2" variant photos (antiquewood-2, concrete-2, linen-2, marble-2, steel-2 [new material], whiteplaster-2, wood-2) not yet added to the surface picker. Lower priority than stickers per user.
+- [ ] Future idea (2026-08-07): a "radio" decoration/object on the table that plays the user's music through their phone (e.g. Apple Music) when tapped — a fun future exploration, not scoped yet.
+- [ ] Exploration: lock screen / widget support for the table view on iPhone. See detailed widget direction below — **not to be built during the current visual-rendering patch work.**
+- [ ] Exploration: iPad support and testing.
+- [ ] Exploration: "nightstand" mode.
+- [ ] Exploration: native clock display on the table.
+
+### Future ideas — "app within an app" desk widgets (logged 2026-08-07, explicitly deferred, not scoped)
+User brain-dumped a big batch of future decoration/widget ideas, explicitly asked to save for later rather than build now:
+- Post-it notes decoration.
+- Calendar widget pulling from the iPhone's actual calendar data (would need EventKit + permission).
+- A little map/globe showing current location (would need Core Location + permission).
+- Weather display widget (would need WeatherKit).
+- Music player linked to Apple Music, playable from the table (ties into the existing "radio" idea above — same feature, more detail: wants real playback control, not just a decorative radio).
+- Miniature versions of stock iPhone apps as table decorations: alarm, world clock, timer, stopwatch, etc. — a genuine "mini apps on the table" concept.
+- Instant-camera decorations (Polaroid/Fuji/Kodak style) — both as decorative artwork (mini camera objects) and as functional print-style photo frames.
+- Let a user add their own photo and have it appear inside a blank instant-photo-style frame — Kate reportedly already has blank Polaroid-style artwork ready for this.
+- User framed several of these as "maybe future" themselves — treat this whole section as low-priority exploration, not a commitment, until re-raised.
+
+### Future direction — Widgets: Tablescape Mode + Library Shelf Mode (logged 2026-08-07)
+**Do not build any of this now — architectural/product direction only, retained for a future dedicated widget effort. Explicitly not part of the current visual-rendering patch.**
+
+Two complementary widget presentation modes are planned:
+
+1. **Tablescape Mode** — a responsive rendering of the user's saved Tablo tabletop and objects (the existing composition view, adapted for widget sizes).
+2. **Library Shelf Mode** — a simpler, compact presentation showing the spines of books in the user's library, inspired by the pleasure of viewing a physical bookshelf. Especially important for smaller widget sizes where a full tablescape would be too detailed to read.
+
+Requirements for Library Shelf Mode, once built:
+- Generate book-spine representations from each book's stored cover colors, title, and author — no separate spine photography required.
+- Preserve enough individuality per spine that the shelf feels like the user's real collection, not a generic placeholder.
+- Support small, medium, large, and extra-large widget families wherever Apple makes those sizes available.
+- Small widget: only a selected handful of spines.
+- Larger widgets: multiple shelves or more of the collection.
+- Possible collections to show: Currently Reading, Recently Added, Favourites, or a user-selected shelf.
+- Tapping the shelf opens Tablo's Library.
+- Use only interactions and refresh behavior officially supported by WidgetKit — no unsupported/custom interaction hacks.
+- No conventional controls, tiny unreadable text, or excessive detail — this should read as a beautifully photographed miniature bookshelf, not a database list.
+- Lock Screen and StandBy variants should be deliberately simplified designs, not a shrunk-down version of the full bookshelf pushed past legibility.
+
+This builds on the already-logged "Exploration: lock screen / widget support" item above — this is the detailed spec for that exploration, not a separate request.
+
+### Future idea — separate "vision board" app (logged 2026-08-07)
+User wants a second, similar app built on the same pattern as ReadingTable but for a vision board instead of a coffee table of books. Kate says she already has the artwork ready for it. Not started, not scoped — would be a new Xcode project, not a feature added to ReadingTable itself.
+- Camera and barcode-scanning features need a physical device (cable-connected via Xcode) — the iOS Simulator has no real camera feed.
+- There are also 5 unused, unrelated `table-*.imageset` assets already sitting in Assets.xcassets (concrete/linen/marble/travertine/wood, no "Kate" prefix) — orphaned placeholders predating Kate's photos, not wired into any UI. Safe to delete if cleaning up, but left alone unless asked.
