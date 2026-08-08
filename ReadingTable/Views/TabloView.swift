@@ -82,7 +82,10 @@ struct TabloView: View {
         guard let composition = compositionViewModel.currentComposition else { return }
         let renderer = ImageRenderer(content: TableSnapshotView(composition: composition))
         renderer.scale = UIScreen.main.scale
-        shareImage = renderer.uiImage
+
+        DispatchQueue.main.async {
+            self.shareImage = renderer.uiImage
+        }
     }
 
     private var revealedControlBar: some View {

@@ -12,28 +12,26 @@ struct DecorationView: View {
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
 
-    private var cardView: some View {
-        ZStack(alignment: .topTrailing) {
-            Image(decoration.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 70, height: 70)
-                .shadow(color: .black.opacity(isSelected ? 0.3 : 0.18), radius: isSelected ? 8 : 4, x: 2, y: 3)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: isSelected ? 2 : 0)
-                )
+    private var coverContent: some View {
+        Image(decoration.imageName)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 70, height: 70)
+            .shadow(color: .black.opacity(isSelected ? 0.3 : 0.18), radius: isSelected ? 8 : 4, x: 2, y: 3)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: isSelected ? 2 : 0)
+            )
+    }
 
-            if isInteractive, isSelected {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                        .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 14, height: 14))
-                }
-                .offset(x: 6, y: -6)
-            }
+    private var deleteButton: some View {
+        Button(action: onDelete) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 14, height: 14))
         }
+        .offset(x: 6, y: -6)
     }
 
     private var dragMagnifyRotateGesture: some Gesture {
@@ -71,18 +69,26 @@ struct DecorationView: View {
 
     var body: some View {
         if isInteractive {
-            cardView
-                .frame(width: 88, height: 88)
-                .contentShape(Rectangle())
-                .scaleEffect(decoration.scale * magnifyBy)
-                .rotationEffect(.degrees(decoration.rotation + rotateBy.degrees))
-                .position(x: decoration.x + dragOffset.width, y: decoration.y + dragOffset.height)
-                .gesture(dragMagnifyRotateGesture)
-                .onTapGesture {
-                    onSelect()
+            ZStack(alignment: .topTrailing) {
+                coverContent
+                    .frame(width: 88, height: 88)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                        TapGesture().onEnded {
+                            onSelect()
+                        }
+                    )
+
+                if isSelected {
+                    deleteButton
                 }
+            }
+            .scaleEffect(decoration.scale * magnifyBy)
+            .rotationEffect(.degrees(decoration.rotation + rotateBy.degrees))
+            .position(x: decoration.x + dragOffset.width, y: decoration.y + dragOffset.height)
+            .gesture(dragMagnifyRotateGesture)
         } else {
-            cardView
+            coverContent
                 .scaleEffect(decoration.scale)
                 .rotationEffect(.degrees(decoration.rotation))
                 .position(x: decoration.x, y: decoration.y)
