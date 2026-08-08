@@ -9,6 +9,8 @@ final class WeatherService: NSObject, ObservableObject {
     @Published var condition: String = ""
     @Published var symbolName: String = "cloud.fill"
     @Published var accessDenied = false
+    @Published var isLoading = true
+    @Published var fetchFailed = false
 
     private let locationManager = CLLocationManager()
     private let weatherKitService = WeatherKit.WeatherService.shared
@@ -21,11 +23,15 @@ final class WeatherService: NSObject, ObservableObject {
     func requestLocationAndFetchWeather() {
         switch locationManager.authorizationStatus {
         case .notDetermined:
+            isLoading = true
             locationManager.requestWhenInUseAuthorization()
         case .authorizedWhenInUse, .authorizedAlways:
             accessDenied = false
+            isLoading = true
+            fetchFailed = false
             locationManager.requestLocation()
         case .denied, .restricted:
+            isLoading = false
             accessDenied = true
         @unknown default:
             break
@@ -41,10 +47,12 @@ final class WeatherService: NSObject, ObservableObject {
             )
             condition = current.condition.description
             symbolName = current.symbolName
+            fetchFailed = false
         } catch {
-            condition = "Weather unavailable"
+            fetchFailed = true
             print("WeatherKit fetch failed: \(error)")
         }
+        isLoading = false
     }
 }
 
@@ -72,6 +80,9 @@ extension WeatherService: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // Best-effort decoration; leave the last-known state on screen rather than showing an error.
+        Task { @MainActor in
+            self.isLoading = false
+            self.fetchFailed = true
+        }
     }
 }

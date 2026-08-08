@@ -171,17 +171,6 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName)
-                            }) {
-                                Image(systemName: "cloud.sun.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
                                 compositionViewModel.addDecoration(imageName: Decoration.clockImageName)
                             }) {
                                 Image(systemName: "clock.fill")
@@ -204,9 +193,9 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName)
                             }) {
-                                Image(systemName: "divide.square.fill")
+                                Image(systemName: "cloud.sun.fill")
                                     .font(.subheadline)
                                     .foregroundColor(.white)
                                     .padding(10)
@@ -214,16 +203,11 @@ struct StyleView: View {
                                     .clipShape(Circle())
                             }
 
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.musicImageName)
-                            }) {
-                                Image(systemName: "music.note")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
+                            // Calculator and Music buttons stay hidden from the picker per the
+                            // 2026-08-08 design review (see DESIGN_REVIEW_LIVE_OBJECTS.md) — their tile
+                            // visuals aren't approved for release yet. Existing placed decorations still
+                            // render normally; Weather has now been rebuilt as a brass barometer to match
+                            // the approved Clock exemplar, pending Adele/Kate's visual sign-off.
 
                             Button(action: { snapToGridEnabled.toggle() }) {
                                 Image(systemName: "square.grid.2x2")

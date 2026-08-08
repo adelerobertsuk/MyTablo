@@ -310,37 +310,50 @@ private struct CalendarDecorationContent: View {
     }
 }
 
+/// Weather exemplar (per DESIGN_REVIEW_LIVE_OBJECTS.md, following the approved Clock): a brass
+/// desk barometer casing, matching TravelClockFace's material language, with the live reading
+/// layered precisely on the dial instead of a generic white "--°" card.
 private struct WeatherDecorationContent: View {
     @StateObject private var weatherService = WeatherService()
     @Environment(\.scenePhase) private var scenePhase
 
+    private let brassLight = Color(red: 0.87, green: 0.73, blue: 0.4)
+    private let brassDark = Color(red: 0.6, green: 0.46, blue: 0.19)
+    private let inkColor = Color(red: 0.2, green: 0.16, blue: 0.1)
+
     var body: some View {
-        VStack(spacing: 6) {
-            if weatherService.accessDenied {
-                Image(systemName: "location.slash")
-                    .font(.system(size: 20))
-                    .foregroundColor(.secondary)
-                Text("Enable Location access in Settings")
-                    .font(.system(size: 8))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            } else {
-                Image(systemName: weatherService.symbolName)
-                    .font(.system(size: 28))
-                    .symbolRenderingMode(.multicolor)
-                Text(weatherService.temperature)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                    .foregroundColor(.black.opacity(0.85))
-                Text(weatherService.condition)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.black.opacity(0.6))
-                    .lineLimit(1)
+        ZStack {
+            // Brass bezel
+            Circle()
+                .fill(AngularGradient(colors: [brassLight, brassDark, brassLight, brassDark, brassLight], center: .center))
+                .frame(width: 86, height: 86)
+            Circle()
+                .stroke(brassDark.opacity(0.6), lineWidth: 1)
+                .frame(width: 86, height: 86)
+
+            // Dial face
+            Circle()
+                .fill(Color(red: 0.97, green: 0.94, blue: 0.86))
+                .frame(width: 72, height: 72)
+
+            ForEach(0..<8, id: \.self) { tick in
+                Rectangle()
+                    .fill(inkColor.opacity(0.3))
+                    .frame(width: 1.5, height: 4)
+                    .offset(y: -31)
+                    .rotationEffect(.degrees(Double(tick) * 45))
             }
+
+            dialContent
+
+            // Little brass feet, grounding it as a tabletop instrument
+            HStack(spacing: 48) {
+                Capsule().fill(brassDark).frame(width: 8, height: 5)
+                Capsule().fill(brassDark).frame(width: 8, height: 5)
+            }
+            .offset(y: 44)
         }
-        .padding(10)
-        .frame(width: 100, height: 100)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(width: 92, height: 96)
         .task {
             weatherService.requestLocationAndFetchWeather()
         }
@@ -350,33 +363,76 @@ private struct WeatherDecorationContent: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var dialContent: some View {
+        if weatherService.accessDenied {
+            VStack(spacing: 3) {
+                Image(systemName: "location.slash")
+                    .font(.system(size: 15))
+                    .foregroundColor(inkColor.opacity(0.6))
+                Text("Enable Location\nin Settings")
+                    .font(.system(size: 7.5, weight: .medium))
+                    .foregroundColor(inkColor.opacity(0.6))
+                    .multilineTextAlignment(.center)
+            }
+            .frame(width: 58)
+        } else if weatherService.isLoading {
+            VStack(spacing: 3) {
+                Image(systemName: "location.fill.viewfinder")
+                    .font(.system(size: 15))
+                    .foregroundColor(inkColor.opacity(0.5))
+                Text("Reading the sky…")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundColor(inkColor.opacity(0.5))
+            }
+        } else if weatherService.fetchFailed {
+            VStack(spacing: 3) {
+                Image(systemName: "exclamationmark.icloud")
+                    .font(.system(size: 15))
+                    .foregroundColor(inkColor.opacity(0.6))
+                Text("Weather unavailable")
+                    .font(.system(size: 7.5, weight: .medium))
+                    .foregroundColor(inkColor.opacity(0.6))
+                    .multilineTextAlignment(.center)
+            }
+            .frame(width: 58)
+        } else {
+            VStack(spacing: 2) {
+                Image(systemName: weatherService.symbolName)
+                    .font(.system(size: 20))
+                    .symbolRenderingMode(.multicolor)
+                Text(weatherService.temperature)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(inkColor)
+                Text(weatherService.condition)
+                    .font(.system(size: 8.5, weight: .medium))
+                    .foregroundColor(inkColor.opacity(0.7))
+                    .lineLimit(1)
+            }
+        }
+    }
 }
 
+/// Clock exemplar per the 2026-08-08 design review (DESIGN_REVIEW_LIVE_OBJECTS.md):
+/// a tactile physical-clock casing (drawn in SwiftUI, standing in for real Kate/Gigi
+/// artwork until that's ready) with live hands/digits layered precisely on top.
 private struct ClockDecorationContent: View {
     var isAnalog: Bool = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            Group {
-                if isAnalog {
-                    AnalogClockFace(date: context.date)
-                        .frame(width: 76, height: 76)
-                } else {
-                    Text(context.date.formatted(.dateTime.hour().minute()))
-                        .font(.system(size: 28, weight: .semibold, design: .rounded))
-                        .foregroundColor(.black.opacity(0.85))
-                        .monospacedDigit()
-                }
+            if isAnalog {
+                TravelClockFace(date: context.date)
+            } else {
+                DigitalClockFace(date: context.date)
             }
-            .padding(10)
-            .frame(width: 100, height: 100)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }
 }
 
-private struct AnalogClockFace: View {
+/// A small brass travel clock: circular bezel, cream dial, carrying ring.
+private struct TravelClockFace: View {
     let date: Date
 
     private var components: DateComponents {
@@ -397,27 +453,103 @@ private struct AnalogClockFace: View {
         .degrees(Double(components.second ?? 0) * 6)
     }
 
+    private let brassLight = Color(red: 0.87, green: 0.73, blue: 0.4)
+    private let brassDark = Color(red: 0.6, green: 0.46, blue: 0.19)
+    private let inkColor = Color(red: 0.2, green: 0.16, blue: 0.1)
+
     var body: some View {
         ZStack {
+            // Carrying ring
             Circle()
-                .stroke(Color.black.opacity(0.8), lineWidth: 2.5)
-            ForEach(0..<12) { tick in
+                .trim(from: 0.1, to: 0.4)
+                .stroke(brassDark, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .frame(width: 20, height: 20)
+                .rotationEffect(.degrees(90))
+                .offset(y: -45)
+
+            // Brass bezel
+            Circle()
+                .fill(AngularGradient(colors: [brassLight, brassDark, brassLight, brassDark, brassLight], center: .center))
+                .frame(width: 86, height: 86)
+            Circle()
+                .stroke(brassDark.opacity(0.6), lineWidth: 1)
+                .frame(width: 86, height: 86)
+
+            // Dial face
+            Circle()
+                .fill(Color(red: 0.97, green: 0.94, blue: 0.86))
+                .frame(width: 72, height: 72)
+
+            ForEach(0..<12, id: \.self) { tick in
                 Rectangle()
-                    .fill(Color.black.opacity(0.6))
-                    .frame(width: 2, height: tick % 3 == 0 ? 7 : 4)
-                    .offset(y: -34)
+                    .fill(inkColor.opacity(tick % 3 == 0 ? 0.85 : 0.4))
+                    .frame(width: tick % 3 == 0 ? 2.5 : 1.5, height: tick % 3 == 0 ? 8 : 4)
+                    .offset(y: -31)
                     .rotationEffect(.degrees(Double(tick) * 30))
             }
-            ClockHand(length: 20, width: 3, color: .black.opacity(0.85))
+
+            ClockHand(length: 17, width: 3, color: inkColor)
                 .rotationEffect(hourAngle)
-            ClockHand(length: 28, width: 2, color: .black.opacity(0.85))
+            ClockHand(length: 25, width: 2, color: inkColor)
                 .rotationEffect(minuteAngle)
-            ClockHand(length: 30, width: 1, color: .red)
+            ClockHand(length: 27, width: 1, color: Color(red: 0.72, green: 0.16, blue: 0.14))
                 .rotationEffect(secondAngle)
+
             Circle()
-                .fill(Color.black.opacity(0.85))
-                .frame(width: 5, height: 5)
+                .fill(inkColor)
+                .frame(width: 4, height: 4)
         }
+        .frame(width: 92, height: 96)
+    }
+}
+
+/// A softly glowing digital bedside clock: dark plastic casing, amber LED-style digits.
+private struct DigitalClockFace: View {
+    let date: Date
+
+    /// Two-digit minutes always (fixes the earlier "18:3" truncation bug); hour stays
+    /// locale-appropriate.
+    private var timeText: String {
+        date.formatted(.dateTime.hour().minute(.twoDigits))
+    }
+
+    private let caseTop = Color(red: 0.2, green: 0.18, blue: 0.16)
+    private let caseBottom = Color(red: 0.09, green: 0.08, blue: 0.08)
+    private let amber = Color(red: 1.0, green: 0.56, blue: 0.16)
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(LinearGradient(colors: [caseTop, caseBottom], startPoint: .top, endPoint: .bottom))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.12), .clear], startPoint: .top, endPoint: .center))
+                )
+                .frame(width: 92, height: 62)
+
+            Text(timeText)
+                .font(.system(size: 21, weight: .semibold, design: .monospaced))
+                .monospacedDigit()
+                .foregroundColor(amber)
+                .shadow(color: amber.opacity(0.75), radius: 4)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.black.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            HStack {
+                Capsule().fill(Color.black.opacity(0.55)).frame(width: 10, height: 4)
+                Spacer()
+                Capsule().fill(Color.black.opacity(0.55)).frame(width: 10, height: 4)
+            }
+            .frame(width: 76)
+            .offset(y: 33)
+        }
+        .frame(width: 96, height: 70)
     }
 }
 
