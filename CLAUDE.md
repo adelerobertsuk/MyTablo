@@ -1,6 +1,8 @@
 # ReadingTable
 
 > **Design decision — 2026-08-08:** Before continuing the clock, calculator, weather, or music UI, read `DESIGN_REVIEW_LIVE_OBJECTS.md`. Adele and Kate have rejected the current generic white-tile presentation. The document contains the approved interaction direction, visual reset, British Table Favourites handoff, extraction-tool location, and pack business-model concept.
+>
+> **Superseding reset — 2026-08-08 (evening), full handover from Adele/Kate/Gigi:** all four utility objects (record player, clock, weather, calculator) reviewed against real photographed books/flowers/Polaroids and found flat/childish/clip-art beside them — **only Calendar's visual direction currently passes.** No further visual implementation until direction is re-approved next session. Full brief logged in the "Utility-object design reset" section below — **read it before touching Clock/Weather/Calculator/Music again.**
 
 iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled with your books.
 
@@ -91,6 +93,7 @@ iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled 
   - **Tooling note 2026-08-08 — synthetic Simulator taps not registering.** Across two devices (iPhone 17, iPhone 17 Pro), coordinate-based taps stopped producing any effect on-screen — confirmed even at the home-screen level (tapping the Tablo icon did nothing), while the HOME hardware-button action still worked. This blocked visually confirming both the orientation fix and adding a widget to a Simulator home screen this session. Treated as an environment/tooling issue, not an app bug — matches a similar note logged 2026-08-08 earlier about the widget-gallery jiggle-mode menu. Re-test once tooling is behaving normally.
   - **Tooling note 2026-08-08 (recurrence, later session) — same tap issue, narrowed further.** Recurred on iPhone 17 during release-readiness fixes. This time narrowed down: a plain `.onTapGesture` on a `Color.clear` layer (e.g. the "tap to reveal control bar" gesture) DID respond to synthetic taps, but native SwiftUI `Button` controls (Library/Style/Share, and a `touch_path` press-and-hold variant) did NOT respond, even immediately after the working gesture fired. Confirmed this is not a regression from the same-session code changes — it blocked verifying multiple unrelated fixes. Treat as an environment/tooling limitation specific to `Button`-type controls in this automation setup, not an app bug, until proven otherwise on a real device or a fresh Simulator session.
   - **Git status 2026-08-08:** both widget commits (`77475e3` scaffold, `7f58539` orientation fix) are on the local `widget-feature` branch. `git push`/`git fetch` from Claude's tool session fail with `could not read Username for 'https://github.com'` — no GitHub credentials available in that sandboxed environment, separate from Adele's own network issues. Adele pushed successfully herself via GitHub Desktop (same working copy) while working off a phone tether (no building Wi-Fi) — confirmed by the local repo's own remote-tracking ref, not independently re-verified against GitHub from Claude's side. If a future session finds `widget-feature` local/remote out of sync, trust GitHub over any stale local assumption.
+  - **Update, 2026-08-08 (later session): this credential limitation no longer holds.** `git push origin widget-feature` succeeded directly from Claude's tool session (commit `039a37e`, the record-player Music rebuild) with no separate auth step — the sandbox now has working GitHub credentials. Treat "Claude can't push" as no longer a safe assumption; try `git push` directly first, and only fall back to asking Adele to push via GitHub Desktop if it actually fails.
   - Full Tablescape/Library Shelf widget vision (below) is still not started — this is just the first small step.
   - **Requested 2026-08-08, not yet scoped — favorite/"Currently Reading" flag on `Book`.** Adele asked whether books can be favorited or marked as a highlight/"currently reading," specifically so the widget shows something the user chose rather than just the most-recently-added book (the current placeholder behavior noted above). Would need a new field on the `Book` model (e.g. `isCurrentlyReading: Bool` or a favorites concept), a way to toggle it from the Library UI, and `ReadingTableWidgets.swift`'s `TimelineProvider` updated to prefer that book over "most recent." Remember any `@Model` field addition must default rather than be required, so existing local records stay loadable.
   - **Future idea (2026-08-08) — auto-fill the Manual add form via text recognition (OCR).** Adele wants the app to read the title/author straight off a photographed cover to populate the new Manual-entry form (added this session) automatically, rather than typing them by hand. Feasible with Apple's Vision framework (`VNRecognizeTextRequest`) run against the same image captured by Scan Cover/Take Photo — not scoped or started.
@@ -249,3 +252,62 @@ Adele tested on her iPad (Simulator taps have historically been unreliable per t
     - Full project builds clean (`xcodebuild`, iphonesimulator), 0 errors.
     - **Visual design confirmed 2026-08-08 by Adele and Kate on iPad.** Kate was asked live whether the barometer should be silver (to differentiate from the gold clock) or match the clock's brass — decided to keep it matching the clock ("Keep it as it is. Uh, love it."). No code change needed, the barometer already uses the same brass palette as `TravelClockFace`.
     - **Still not loading real weather data as of this same iPad test, but narrowed down: stuck on the "Reading the sky…" loading state, never resolving to either a temperature or a failure message.** Root cause: `CLLocationManager.requestLocation()` has no built-in timeout — if the device can't get a location fix at all, neither `didUpdateLocations` nor `didFailWithError` ever fires, so the code just waits forever. Most likely trigger on an iPad specifically: many iPads are Wi-Fi-only with no GPS chip, so indoor location fixes rely on Wi-Fi-network triangulation, which can be slow or simply unavailable depending on the network. Fixed by adding `startTimeoutWatch()` (`WeatherService.swift`) — after 15 seconds with no result, it surfaces the same honest "Weather unavailable" state used for a real fetch failure, instead of hanging on the loading text indefinitely. This does not fix WeatherKit/location itself (still worth testing outdoors or near a window to see if it ever succeeds), it just guarantees the object never looks silently stuck. Full project builds clean, 0 errors. **Not yet re-tested on device.**
+
+## Utility-object design reset — full handover 2026-08-08 (evening), from Adele/Kate/Gigi review of screenshots
+
+**Verdict: Calendar is the only new utility object whose visual direction currently feels right.** Record player, Clock, Weather, and Calculator are all now **prototypes, not approved designs** — flat, childish, clip-art-like next to the app's photorealistic books/flowers/Polaroids. Would rather temporarily remove an object than ship it below MyTablo's quality bar. **No further visual implementation happened tonight** and none should happen until direction is re-approved with Adele, Kate, and Gigi in a future session.
+
+**Preserve, don't discard:** all four objects' underlying functionality (record playback, live clock, calculator logic, weather fetch+timeout) stays as-is in code — this is an art-direction reset, not a feature rollback.
+
+### Record player specifics
+- The MD Vinyl player (referenced earlier when this was built) was a **quality reference only** — do not copy its proprietary assets or produce a simplified cartoon version of it.
+- Target: a premium, photorealistic/editorial-quality transparent-background tabletop object, fully draggable/rotatable/scalable like every other object, never fixed in place, with obvious functional controls. Likely technical shape: a high-quality transparent visual asset with SwiftUI controls layered invisibly/discreetly on top. Kate may supply artwork, or Gigi may help generate/prepare it.
+- The 5 bundled tracks are royalty-free audio from Pixabay (see [[project_music_decoration_pixabay]]) — **remove every Apple Music reference and the "Open in Apple Music" link/branding**, and instead accurately label the audio as bundled royalty-free music with correct artist/attribution per licence. Playback (play/pause/skip) must work from normal Table mode, not just inside the Style-mode sheet — this reverses the "interaction scope deliberately kept small" decision logged in the original Music build above. Show a clear playing-state indicator (record rotation, tonearm movement, or similar).
+
+### Clock / Weather / Calculator specifics
+Pause current artwork (`DigitalClockFace`, `TravelClockFace`, the brass-barometer `WeatherDecorationContent`, and the plain calculator tile) — functional logic can stay, but none of it is approved artwork. Standing design bar for every future utility object:
+- Must look deliberately placed on a beautiful coffee table — no generic cards, white squares, SF Symbol tiles, or cartoon drawings.
+- Must share the depth/lighting/material quality/restraint of existing books and decorations.
+- Avoid cramming in too much info; stay readable at multiple sizes.
+- **Core function must work from normal Table mode, not just Style mode** — Style mode is for adding/arranging only. (Same gesture-layering caveat as logged elsewhere in this file — Group-modifier propagation, `highPriorityGesture` blocking nested buttons — will need care when this is tackled.)
+- Empty/unavailable states must still look intentional and beautiful, not broken.
+- Preserve drag/scale/rotate/layer/delete on every object; meet accessibility requirements without hurting the aesthetic; never falsely claim integration with another service (ties into the Apple Music removal above).
+
+### Next session's deliverables (before any more implementation)
+1. Short audit of current implementation.
+2. What functionality is retainable independent of artwork.
+3. 2–3 visual-object concepts per utility (record player, clock, weather, calculator).
+4. Recommendation per object: supplied artwork, generated artwork, or native SwiftUI drawing.
+5. **No further implementation until this direction is approved** — this session should start with proposing/discussing, not coding.
+
+**MyTablo acceptance test for any new/reworked object:** doesn't lower the table's visual quality; looks credible beside a real photographed book or flower; purpose obvious without explanation; core function works outside Style mode; attractive at multiple sizes; never falsely claims integration with another service; Adele and Kate would willingly leave it visible on their own tables all day.
+
+## White Rabbits — new separate app (Team Polaris), briefed 2026-08-08, targeting ~2026-09-01 release
+
+A **new, separate iOS app**, not a MyTablo feature. **Do not begin coding until this is scoped with Adele** — next session should start by inspecting any existing Gemini prototype/files (location not yet known to this session — ask Adele), then propose architecture and an MVP plan, preserving useful prototype work without letting it dictate the final design.
+
+**Concept:** turns the first-of-the-month "White Rabbits" good-luck tradition into a monthly ritual app — gentle reminder to say "White Rabbits" on the 1st, confirm you remembered, unlock that month's limited-edition collectible bunny, start a fresh monthly page. Tone: simple, sleek, magical, calm, collectible, grown-up — luxury storybook/editorial stationery, explicitly **not** a cartoon habit-tracker. Never implies the app guarantees real luck — frame as a joyful personal ritual only.
+
+**September MVP scope:**
+1. Reminder the evening before and/or morning of the 1st.
+2. A first-of-the-month ritual screen.
+3. Simple "I said White Rabbits" confirmation.
+4. One limited-edition bunny unlocked per month.
+5. A monthly intention (user-entered).
+6. One vision-board image per month.
+7. One simple monthly habit with an understated daily tracker.
+8. Journal/archive of previous months + collected bunnies.
+
+Must handle months/time zones/notification scheduling/date changes reliably. Monthly flow: reminder → open app, see hidden bunny → confirm said "White Rabbits" → bunny reveals & joins collection → set one intention → pick one image → optionally pick one habit → month archives into the journal.
+
+**Design/privacy constraints:** local-first where practical; no account required for MVP; optional iCloud sync is a later idea, not MVP; notification permission optional and clearly explained; accessible text/controls/contrast/reduced-motion; no dashboards, streaks, stats, or social pressure; Kate's approved bunny artwork leads the visual identity; future seasonal bunny packs may support monetization later, not at MVP's expense.
+
+**Next session's deliverables (research/planning only, no code yet):**
+1. One-page product definition.
+2. September MVP vs. later roadmap.
+3. Complete user journey.
+4. Proposed data model.
+5. Notification + first-of-month logic approach.
+6. Visual direction + screen list.
+7. Open questions for Adele/Kate.
+8. Realistic plan for a polished September release.
