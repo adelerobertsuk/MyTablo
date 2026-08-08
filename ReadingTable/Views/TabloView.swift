@@ -8,7 +8,6 @@ struct TabloView: View {
     @State private var showLibrary = false
     @State private var showStyle = false
     @State private var shareImage: UIImage?
-    @State private var showShareSheet = false
 
     var body: some View {
         ZStack {
@@ -56,6 +55,7 @@ struct TabloView: View {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     controlsRevealed = true
                                 }
+                                refreshShareImage()
                             }
                     }
                 }
@@ -75,22 +75,14 @@ struct TabloView: View {
                 onDismiss: { showStyle = false }
             )
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let shareImage {
-                ShareSheet(items: [shareImage])
-            }
-        }
+        .onAppear(perform: refreshShareImage)
     }
 
-    private func exportSnapshot() {
+    private func refreshShareImage() {
         guard let composition = compositionViewModel.currentComposition else { return }
         let renderer = ImageRenderer(content: TableSnapshotView(composition: composition))
         renderer.scale = UIScreen.main.scale
-
-        DispatchQueue.main.async {
-            self.shareImage = renderer.uiImage
-            self.showShareSheet = self.shareImage != nil
-        }
+        shareImage = renderer.uiImage
     }
 
     private var revealedControlBar: some View {
@@ -121,12 +113,17 @@ struct TabloView: View {
                 }
             }
 
-            Button(action: exportSnapshot) {
-                VStack(spacing: 4) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 22))
-                    Text("Share")
-                        .font(.caption2)
+            if let shareImage {
+                ShareLink(
+                    item: Image(uiImage: shareImage),
+                    preview: SharePreview("Tablo", image: Image(uiImage: shareImage))
+                ) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 22))
+                        Text("Share")
+                            .font(.caption2)
+                    }
                 }
             }
         }

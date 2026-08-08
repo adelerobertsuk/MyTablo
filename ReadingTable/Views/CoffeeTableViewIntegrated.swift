@@ -210,42 +210,40 @@ struct TableBookView: View {
         return UIImage(data: data)
     }
 
-    private var cardView: some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack {
-                if let coverImage {
-                    Image(uiImage: coverImage)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.4))
-                }
-            }
-            .frame(width: 112, height: 160)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            .overlay(alignment: .leading) {
-                LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .leading, endPoint: .trailing)
-                    .frame(width: 5)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 3)
-                    .stroke(isSelected ? Color.accentColor : Color.black.opacity(0.15), lineWidth: isSelected ? 2 : 1)
-            )
-            .compositingGroup()
-            .shadow(color: .black.opacity(isSelected ? 0.35 : 0.25), radius: isSelected ? 10 : 6, x: 3, y: 5)
-
-            if isInteractive, isSelected {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white)
-                        .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 16, height: 16))
-                }
-                .offset(x: 8, y: -8)
+    private var coverContent: some View {
+        ZStack {
+            if let coverImage {
+                Image(uiImage: coverImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.4))
             }
         }
+        .frame(width: 112, height: 160)
+        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .overlay(alignment: .leading) {
+            LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .leading, endPoint: .trailing)
+                .frame(width: 5)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(isSelected ? Color.accentColor : Color.black.opacity(0.15), lineWidth: isSelected ? 2 : 1)
+        )
+        .compositingGroup()
+        .shadow(color: .black.opacity(isSelected ? 0.35 : 0.25), radius: isSelected ? 10 : 6, x: 3, y: 5)
+    }
+
+    private var deleteButton: some View {
+        Button(action: onDelete) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 18))
+                .foregroundColor(.white)
+                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 16, height: 16))
+        }
+        .offset(x: 8, y: -8)
     }
 
     private var dragMagnifyRotateGesture: some Gesture {
@@ -287,22 +285,28 @@ struct TableBookView: View {
 
     var body: some View {
         if isInteractive {
-            cardView
-                .scaleEffect(composedBook.scale * magnifyBy)
-                .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
-                .position(x: composedBook.x + dragOffset.width, y: composedBook.y + dragOffset.height)
-                .gesture(dragMagnifyRotateGesture)
-                .highPriorityGesture(
-                    TapGesture(count: 2)
-                        .onEnded {
-                            onStraighten()
-                        }
-                        .exclusively(before: TapGesture(count: 1).onEnded {
-                            onSelect()
-                        })
-                )
+            ZStack(alignment: .topTrailing) {
+                coverContent
+                    .gesture(dragMagnifyRotateGesture)
+                    .highPriorityGesture(
+                        TapGesture(count: 2)
+                            .onEnded {
+                                onStraighten()
+                            }
+                            .exclusively(before: TapGesture(count: 1).onEnded {
+                                onSelect()
+                            })
+                    )
+
+                if isSelected {
+                    deleteButton
+                }
+            }
+            .scaleEffect(composedBook.scale * magnifyBy)
+            .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
+            .position(x: composedBook.x + dragOffset.width, y: composedBook.y + dragOffset.height)
         } else {
-            cardView
+            coverContent
                 .scaleEffect(composedBook.scale)
                 .rotationEffect(.degrees(composedBook.rotation))
                 .position(x: composedBook.x, y: composedBook.y)

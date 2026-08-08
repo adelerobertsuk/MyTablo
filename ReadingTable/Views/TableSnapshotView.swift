@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct TableSnapshotView: View {
     let composition: CoffeeTableComposition
@@ -36,24 +35,4 @@ struct TableSnapshotView: View {
                 .padding(.bottom, 10)
         }
     }
-}
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        if let popover = controller.popoverPresentationController {
-            let keyWindow = UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .flatMap { $0.windows }
-                .first { $0.isKeyWindow }
-            popover.sourceView = keyWindow
-            popover.sourceRect = CGRect(x: keyWindow?.bounds.midX ?? 0, y: keyWindow?.bounds.midY ?? 0, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
