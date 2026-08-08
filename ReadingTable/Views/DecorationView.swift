@@ -14,9 +14,9 @@ struct DecorationView: View {
 
     @State private var dragOffset: CGSize = .zero
     @State private var showCalculatorSheet = false
+    @State private var showRecordPlayerSheet = false
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
-    @Environment(\.openURL) private var openURL
 
     private var visualSize: CGFloat { decoration.isStickyNote ? 110 : 70 }
     private var touchTargetSize: CGFloat {
@@ -27,7 +27,7 @@ struct DecorationView: View {
         if decoration.isClock { return 120 }
         if decoration.isLocation { return 120 }
         if decoration.isCalculator { return 110 }
-        if decoration.isMusic { return 100 }
+        if decoration.isMusic { return 116 }
         return 88
     }
 
@@ -94,7 +94,7 @@ struct DecorationView: View {
                     .compositingGroup()
                     .shadow(color: .black.opacity(isSelected ? 0.32 : 0.22), radius: isSelected ? 9 : 5, x: 2, y: 4)
             } else if decoration.isMusic {
-                MusicDecorationContent()
+                RecordPlayerDecorationContent()
                     .compositingGroup()
                     .shadow(color: .black.opacity(isSelected ? 0.32 : 0.22), radius: isSelected ? 9 : 5, x: 2, y: 4)
             } else {
@@ -146,9 +146,7 @@ struct DecorationView: View {
             if decoration.isCalculator {
                 showCalculatorSheet = true
             } else if decoration.isMusic {
-                if let url = URL(string: "https://music.apple.com") {
-                    openURL(url)
-                }
+                showRecordPlayerSheet = true
             }
         }) {
             Image(systemName: decoration.isCalculator ? "arrow.up.forward.app.fill" : "play.circle.fill")
@@ -226,6 +224,9 @@ struct DecorationView: View {
             .gesture(dragMagnifyRotateGesture)
             .sheet(isPresented: $showCalculatorSheet) {
                 CalculatorSheetView()
+            }
+            .sheet(isPresented: $showRecordPlayerSheet) {
+                RecordPlayerSheetView()
             }
         } else {
             coverContent
@@ -656,19 +657,113 @@ private struct CalculatorDecorationContent: View {
     }
 }
 
-private struct MusicDecorationContent: View {
+/// Music exemplar, matching DigitalClockFace/CalculatorDecorationContent's dark-plastic-and-brass
+/// material family per the 2026-08-08 design review (DESIGN_REVIEW_LIVE_OBJECTS.md): a small
+/// portable record player, spinning a colored "album" label per track, rather than a generic
+/// white music-note tile. Tapping the object (via the shared openButton) expands it into
+/// RecordPlayerSheetView, the full player.
+private struct RecordPlayerDecorationContent: View {
+    @ObservedObject private var player = RecordPlayerService.shared
+
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "music.note")
-                .font(.system(size: 26))
-                .foregroundColor(Color(red: 0.95, green: 0.25, blue: 0.35))
-            Text("Music")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.black.opacity(0.6))
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !player.isPlaying)) { context in
+            RecordPlayerCasing(track: player.currentTrack, isPlaying: player.isPlaying, now: context.date)
         }
-        .frame(width: 80, height: 80)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+private struct RecordPlayerCasing: View {
+    let track: RecordTrack
+    let isPlaying: Bool
+    let now: Date
+
+    private let caseTop = Color(red: 0.2, green: 0.18, blue: 0.16)
+    private let caseBottom = Color(red: 0.09, green: 0.08, blue: 0.08)
+    private let brassLight = Color(red: 0.87, green: 0.73, blue: 0.4)
+    private let brassDark = Color(red: 0.6, green: 0.46, blue: 0.19)
+
+    /// Deriving the spin angle from a periodic `TimelineView` (rather than a started/stopped
+    /// SwiftUI animation) means pausing is just "stop asking for new frames" — the disc freezes
+    /// at whatever angle it was already at, with no snap-back or restart glitch.
+    private var rotationDegrees: Double {
+        let period = 2.6
+        let seconds = now.timeIntervalSinceReferenceDate
+        return (seconds.truncatingRemainder(dividingBy: period)) / period * 360
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(LinearGradient(colors: [caseTop, caseBottom], startPoint: .top, endPoint: .bottom))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.1), .clear], startPoint: .top, endPoint: .center))
+                )
+                .frame(width: 100, height: 88)
+
+            VinylDiscView(track: track, diameter: 58)
+                .rotationEffect(.degrees(rotationDegrees))
+                .offset(x: -10, y: 3)
+
+            RecordPlayerTonearm(brassLight: brassLight, brassDark: brassDark, isDown: isPlaying)
+                .offset(x: 28, y: -16)
+        }
+        .frame(width: 110, height: 96)
+    }
+}
+
+/// A small vinyl record whose center label is colored per-track, so switching tracks visibly
+/// changes "the record on the platter" — the little-albums effect Adele and Kate asked for.
+private struct VinylDiscView: View {
+    let track: RecordTrack
+    let diameter: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.black)
+                .frame(width: diameter, height: diameter)
+            ForEach(1..<5, id: \.self) { ring in
+                Circle()
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.6)
+                    .frame(width: diameter * (0.4 + Double(ring) * 0.12))
+            }
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [track.labelColor.opacity(0.9), track.labelColor],
+                        center: .center, startRadius: 0, endRadius: diameter * 0.22
+                    )
+                )
+                .frame(width: diameter * 0.44, height: diameter * 0.44)
+            Circle()
+                .fill(Color.black)
+                .frame(width: diameter * 0.06, height: diameter * 0.06)
+        }
+    }
+}
+
+private struct RecordPlayerTonearm: View {
+    let brassLight: Color
+    let brassDark: Color
+    let isDown: Bool
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Circle()
+                .fill(brassDark)
+                .frame(width: 8, height: 8)
+            RoundedRectangle(cornerRadius: 2)
+                .fill(LinearGradient(colors: [brassLight, brassDark], startPoint: .leading, endPoint: .trailing))
+                .frame(width: 32, height: 3)
+                .offset(x: 4, y: 2.5)
+                .rotationEffect(.degrees(isDown ? 26 : 4), anchor: .leading)
+        }
+        .animation(.easeInOut(duration: 0.4), value: isDown)
     }
 }
 
@@ -852,6 +947,137 @@ struct CalculatorSheetView: View {
             return String(format: "%.0f", value)
         }
         return String(value)
+    }
+}
+
+/// The full "little deck" record player, opened by tapping the tabletop turntable object.
+/// Per DESIGN_REVIEW_LIVE_OBJECTS.md: "Opening Apple Music can remain a secondary action" —
+/// the primary experience here is playing the bundled tracks directly.
+struct RecordPlayerSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @ObservedObject private var player = RecordPlayerService.shared
+
+    private let caseTop = Color(red: 0.2, green: 0.18, blue: 0.16)
+    private let caseBottom = Color(red: 0.09, green: 0.08, blue: 0.08)
+    private let amber = Color(red: 1.0, green: 0.56, blue: 0.16)
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 28) {
+                Spacer()
+
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !player.isPlaying)) { context in
+                    BigVinylDisc(track: player.currentTrack, now: context.date)
+                }
+                .frame(width: 220, height: 220)
+
+                VStack(spacing: 4) {
+                    Text(player.currentTrack.title)
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                    Text(player.currentTrack.artist)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+
+                HStack(spacing: 36) {
+                    Button(action: player.skipToPrevious) {
+                        Image(systemName: "backward.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                    }
+                    Button(action: player.togglePlayPause) {
+                        Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 56))
+                            .foregroundColor(amber)
+                    }
+                    Button(action: player.skipToNext) {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                    }
+                }
+
+                Button(action: {
+                    if let url = URL(string: "https://music.apple.com") {
+                        openURL(url)
+                    }
+                }) {
+                    Text("Open in Apple Music")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+                .padding(.top, 4)
+
+                Spacer()
+
+                Text("Royalty-free lo-fi tracks, bundled with the app for offline listening.")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.3))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 8)
+            }
+            .frame(maxWidth: .infinity)
+            .background(
+                LinearGradient(colors: [caseTop, caseBottom], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+            )
+            .navigationTitle("Record Player")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(caseBottom, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                        .tint(amber)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+private struct BigVinylDisc: View {
+    let track: RecordTrack
+    let now: Date
+
+    private var rotationDegrees: Double {
+        let period = 3.2
+        let seconds = now.timeIntervalSinceReferenceDate
+        return (seconds.truncatingRemainder(dividingBy: period)) / period * 360
+    }
+
+    var body: some View {
+        ZStack {
+            Circle().fill(Color.black).frame(width: 220, height: 220)
+            ForEach(1..<9, id: \.self) { ring in
+                Circle()
+                    .stroke(Color.white.opacity(0.05), lineWidth: 0.8)
+                    .frame(width: 220 * (0.28 + Double(ring) * 0.08))
+            }
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [track.labelColor.opacity(0.95), track.labelColor],
+                        center: .center, startRadius: 0, endRadius: 46
+                    )
+                )
+                .frame(width: 92, height: 92)
+            VStack(spacing: 2) {
+                Image(systemName: "music.note")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.85))
+                Text(track.artist)
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.75))
+            }
+            Circle().fill(Color.black).frame(width: 10, height: 10)
+        }
+        .rotationEffect(.degrees(rotationDegrees))
+        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
     }
 }
 

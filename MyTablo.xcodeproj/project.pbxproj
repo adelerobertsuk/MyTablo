@@ -45,28 +45,28 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTableWidgetsExtension" target */ = {
+		7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "MyTabloWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+			target = 7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */;
 		};
-		7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "ReadingTableWidgetsExtension" target */ = {
+		7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "MyTabloWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Book.swift,
 				Models/Decoration.swift,
 				Views/Widgets/SmallWidgetView.swift,
 			);
-			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+			target = 7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */;
 		};
-		7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTable" target */ = {
+		7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "MyTablo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ReadingTableWidgets.swift,
 			);
-			target = 7F70418E3024BDCB00ED99CF /* ReadingTable */;
+			target = 7F70418E3024BDCB00ED99CF /* MyTablo */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -74,7 +74,7 @@
 		7F7041913024BDCB00ED99CF /* ReadingTable */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "ReadingTableWidgetsExtension" target */,
+				7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "MyTabloWidgetsExtension" target */,
 			);
 			path = ReadingTable;
 			sourceTree = "<group>";
@@ -82,8 +82,8 @@
 		7FE088F430269E8E0005C7E7 /* ReadingTableWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTable" target */,
-				7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTableWidgetsExtension" target */,
+				7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "MyTablo" target */,
+				7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "MyTabloWidgetsExtension" target */,
 			);
 			path = ReadingTableWidgets;
 			sourceTree = "<group>";
