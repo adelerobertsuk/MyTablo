@@ -30,7 +30,10 @@ struct DecorationView: View {
                         .font(.system(size: 16))
                         .foregroundColor(.white)
                         .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 14, height: 14))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
+                .accessibilityLabel("Remove decoration")
                 .offset(x: 6, y: -6)
             }
         }
