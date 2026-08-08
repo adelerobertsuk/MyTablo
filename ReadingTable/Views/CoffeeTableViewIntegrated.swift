@@ -1,5 +1,11 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
+
+struct StickyNoteEditorContext: Identifiable {
+    let id = UUID()
+    let decoration: Decoration?
+}
 
 struct StyleView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
@@ -8,7 +14,11 @@ struct StyleView: View {
 
     @State private var showLibraryPicker = false
     @State private var showStickerPicker = false
+    @State private var stickyNoteEditorContext: StickyNoteEditorContext?
     @State private var snapToGridEnabled = false
+    @State private var showPhotoPicker = false
+    @State private var photoPickerItem: PhotosPickerItem?
+    @State private var editingPhotoDecoration: Decoration?
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     private let surfaceOptions: [(name: String, label: String)] = [
@@ -82,6 +92,19 @@ struct StyleView: View {
                                 },
                                 onDelete: {
                                     compositionViewModel.removeDecoration(decoration)
+                                },
+                                onEditText: {
+                                    stickyNoteEditorContext = StickyNoteEditorContext(decoration: decoration)
+                                },
+                                onEditPhoto: {
+                                    editingPhotoDecoration = decoration
+                                    showPhotoPicker = true
+                                },
+                                onStraighten: {
+                                    compositionViewModel.updateDecoration(decoration, offsetX: decoration.x, offsetY: decoration.y, scale: decoration.scale, rotation: 0)
+                                },
+                                onToggleClockStyle: {
+                                    compositionViewModel.toggleClockStyle(decoration)
                                 }
                             )
                             .zIndex(decoration.zIndex)
@@ -106,6 +129,95 @@ struct StyleView: View {
 
                             Button(action: { showStickerPicker = true }) {
                                 Image(systemName: "leaf.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                stickyNoteEditorContext = StickyNoteEditorContext(decoration: nil)
+                            }) {
+                                Image(systemName: "note.text")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                editingPhotoDecoration = nil
+                                showPhotoPicker = true
+                            }) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.calendarImageName)
+                            }) {
+                                Image(systemName: "calendar")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName)
+                            }) {
+                                Image(systemName: "cloud.sun.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.clockImageName)
+                            }) {
+                                Image(systemName: "clock.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.locationImageName)
+                            }) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName)
+                            }) {
+                                Image(systemName: "divide.square.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.musicImageName)
+                            }) {
+                                Image(systemName: "music.note")
                                     .font(.subheadline)
                                     .foregroundColor(.white)
                                     .padding(10)
@@ -172,7 +284,52 @@ struct StyleView: View {
                 compositionViewModel.addDecoration(imageName: imageName)
             }
         }
-        .alert("Couldn't Save", isPresented: Binding(
+        .sheet(item: $stickyNoteEditorContext) { context in
+            if let decoration = context.decoration {
+                StickyNoteEditorView(
+                    existingText: decoration.noteText ?? "",
+                    existingColor: StickyNoteColor(rawValue: decoration.noteColorName ?? "") ?? .yellow
+                ) { text, color in
+                    compositionViewModel.updateStickyNoteText(decoration, text: text, color: color)
+                }
+            } else {
+                StickyNoteEditorView { text, color in
+                    compositionViewModel.addStickyNote(text: text, color: color)
+                }
+            }
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
+        .onChange(of: photoPickerItem) { _, newItem in
+            guard let newItem else { return }
+            Task {
+                do {
+                    guard let data = try await newItem.loadTransferable(type: Data.self),
+                          let image = UIImage(data: data) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                    let normalized = image.normalizedOrientation()
+                    guard let jpegData = normalized.jpegData(compressionQuality: 0.9) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                    await MainActor.run {
+                        if let editingPhotoDecoration {
+                            compositionViewModel.updatePhotoDecorationImage(editingPhotoDecoration, imageData: jpegData)
+                        } else {
+                            compositionViewModel.addPhotoDecoration(imageData: jpegData)
+                        }
+                        editingPhotoDecoration = nil
+                        photoPickerItem = nil
+                    }
+                } catch {
+                    await MainActor.run {
+                        compositionViewModel.errorMessage = "Couldn't load that photo — try picking a different one."
+                        editingPhotoDecoration = nil
+                        photoPickerItem = nil
+                    }
+                }
+            }
+        }
+        .alert("Something Went Wrong", isPresented: Binding(
             get: { compositionViewModel.errorMessage != nil },
             set: { if !$0 { compositionViewModel.errorMessage = nil } }
         )) {

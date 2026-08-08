@@ -44,11 +44,36 @@ class CoffeeTableCompositionViewModel: ObservableObject {
                 sortBy: [SortDescriptor(\.createdDate, order: .reverse)]
             )
             self.compositions = try modelContext.fetch(descriptor)
+            repairDanglingBookReferences()
             if let first = compositions.first {
                 self.currentComposition = first
             }
         } catch {
             self.errorMessage = "Failed to load compositions: \(error.localizedDescription)"
+        }
+    }
+
+    /// Composition items saved before `ComposedBook` had cleanup-on-delete could be left
+    /// pointing at a book row that's since been deleted — reading any property off that
+    /// stale reference (e.g. `coverImageData`) crashes with "This model instance was
+    /// invalidated." Strip those out, comparing by identity so we never touch the stale
+    /// object's own properties.
+    private func repairDanglingBookReferences() {
+        guard let validBooks = try? modelContext.fetch(FetchDescriptor<Book>()) else { return }
+        let validBookIDs = Set(validBooks.map(\.persistentModelID))
+        var didRepair = false
+        for composition in compositions {
+            let before = composition.items.count
+            composition.items.removeAll { composedBook in
+                guard let book = composedBook.book else { return false }
+                return !validBookIDs.contains(book.persistentModelID)
+            }
+            if composition.items.count != before {
+                didRepair = true
+            }
+        }
+        if didRepair {
+            save()
         }
     }
     
@@ -138,6 +163,72 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         composition.decorations.append(decoration)
         save()
         currentComposition = composition
+    }
+
+    func addStickyNote(text: String, color: StickyNoteColor) {
+        guard let composition = currentComposition else { return }
+
+        let note = Decoration(
+            imageName: Decoration.stickyNoteImageName,
+            x: 150,
+            y: 200,
+            rotation: Double.random(in: -8...8),
+            scale: 1.0,
+            zIndex: nextZIndex(in: composition),
+            noteText: text,
+            noteColorName: color.rawValue
+        )
+        composition.decorations.append(note)
+        save()
+        currentComposition = composition
+    }
+
+    func updateStickyNoteText(_ decoration: Decoration, text: String, color: StickyNoteColor) {
+        guard let composition = currentComposition else { return }
+
+        if let index = composition.decorations.firstIndex(where: { $0.id == decoration.id }) {
+            composition.decorations[index].noteText = text
+            composition.decorations[index].noteColorName = color.rawValue
+            save()
+            currentComposition = composition
+        }
+    }
+
+    func toggleClockStyle(_ decoration: Decoration) {
+        guard let composition = currentComposition else { return }
+
+        if let index = composition.decorations.firstIndex(where: { $0.id == decoration.id }) {
+            composition.decorations[index].clockStyleName = decoration.isAnalogClock ? nil : "analog"
+            save()
+            currentComposition = composition
+        }
+    }
+
+    func addPhotoDecoration(imageData: Data) {
+        guard let composition = currentComposition else { return }
+
+        let photo = Decoration(
+            imageName: Decoration.photoFrameImageName,
+            x: 150,
+            y: 200,
+            rotation: Double.random(in: -8...8),
+            scale: 1.0,
+            zIndex: nextZIndex(in: composition),
+            photoImageData: imageData
+        )
+        composition.decorations.append(photo)
+        save()
+        currentComposition = composition
+    }
+
+    func updatePhotoDecorationImage(_ decoration: Decoration, imageData: Data) {
+        guard let composition = currentComposition else { return }
+
+        if let index = composition.decorations.firstIndex(where: { $0.id == decoration.id }) {
+            composition.decorations[index].photoImageData = imageData
+            save()
+            currentComposition = composition
+        }
     }
 
     func updateDecoration(_ decoration: Decoration, offsetX: Double, offsetY: Double, scale: Double, rotation: Double) {

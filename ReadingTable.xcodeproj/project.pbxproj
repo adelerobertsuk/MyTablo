@@ -402,7 +402,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Used to show today's calendar events on the Calendar table decoration.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show local weather and your current location on table decorations.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -437,7 +439,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Used to show today's calendar events on the Calendar table decoration.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show local weather and your current location on table decorations.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -21,6 +21,7 @@ struct TabloView: View {
     @State private var showStyle = false
     @State private var shareImage: UIImage?
     @State private var sharePNGData: Data?
+    @State private var tableSize: CGSize = CGSize(width: 402, height: 874)
 
     var body: some View {
         ZStack {
@@ -31,6 +32,8 @@ struct TabloView: View {
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .scaleEffect(1.04, anchor: .bottom)
                     .clipped()
+                    .onAppear { tableSize = geometry.size }
+                    .onChange(of: geometry.size) { _, newSize in tableSize = newSize }
             }
             .ignoresSafeArea()
 
@@ -59,11 +62,25 @@ struct TabloView: View {
 
                 ZStack {
                     if controlsRevealed {
-                        revealedControlBar
+                        VStack(spacing: 8) {
+                            if let notice = sharingPrivacyNotice {
+                                Text(notice)
+                                    .font(.caption2)
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.black.opacity(0.35), in: Capsule())
+                                    .padding(.horizontal, 24)
+                            }
+                            revealedControlBar
+                        }
+                            .frame(minHeight: 110)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
                         Color.clear
                             .contentShape(Rectangle())
+                            .frame(height: 110)
                             .onTapGesture {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     controlsRevealed = true
@@ -72,7 +89,6 @@ struct TabloView: View {
                             }
                     }
                 }
-                .frame(height: 110)
                 .frame(maxWidth: .infinity)
             }
         }
@@ -91,9 +107,32 @@ struct TabloView: View {
         .onAppear(perform: refreshShareImage)
     }
 
+    private var hasPhotoDecorations: Bool {
+        compositionViewModel.currentComposition?.decorations.contains(where: { $0.isPhotoFrame }) ?? false
+    }
+
+    private var hasCalendarDecorations: Bool {
+        compositionViewModel.currentComposition?.decorations.contains(where: { $0.isCalendar }) ?? false
+    }
+
+    /// Only shown when the table actually contains sensitive live content — not for sticky notes
+    /// or ordinary stickers alone.
+    private var sharingPrivacyNotice: String? {
+        switch (hasPhotoDecorations, hasCalendarDecorations) {
+        case (true, true):
+            return "Sharing includes any personal photos and calendar events visible on your table"
+        case (true, false):
+            return "Sharing includes any personal photos visible on your table"
+        case (false, true):
+            return "Sharing includes any calendar events visible on your table"
+        case (false, false):
+            return nil
+        }
+    }
+
     private func refreshShareImage() {
         guard let composition = compositionViewModel.currentComposition else { return }
-        let renderer = ImageRenderer(content: TableSnapshotView(composition: composition))
+        let renderer = ImageRenderer(content: TableSnapshotView(composition: composition, size: tableSize))
         renderer.scale = UIScreen.main.scale
 
         DispatchQueue.main.async {
@@ -134,7 +173,7 @@ struct TabloView: View {
                 ShareLink(
                     item: ShareableTableSnapshot(pngData: sharePNGData),
                     message: Text("Here's what's on MyTablo right now 📚✨"),
-                    preview: SharePreview("MyTablo", image: Image(uiImage: shareImage))
+                    preview: SharePreview("", image: Image(uiImage: shareImage))
                 ) {
                     VStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up")

@@ -30,8 +30,9 @@ class LibraryViewModel: ObservableObject {
         }
     }
     
-    func addBook(isbn: String, customCoverData: Data? = nil) async {
-        guard !isbn.trimmingCharacters(in: .whitespaces).isEmpty else {
+    func addBook(isbn rawIsbn: String, customCoverData: Data? = nil) async {
+        let isbn = Self.sanitizeISBN(rawIsbn)
+        guard !isbn.isEmpty else {
             errorMessage = "ISBN cannot be empty"
             return
         }
@@ -69,6 +70,39 @@ class LibraryViewModel: ObservableObject {
         }
     }
     
+    func addBookManually(title: String, author: String, coverImageData: Data?) {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
+        guard !trimmedTitle.isEmpty else {
+            errorMessage = "Title cannot be empty"
+            return
+        }
+        errorMessage = nil
+
+        let newBook = Book(
+            isbn: "manual-\(UUID().uuidString)",
+            title: trimmedTitle,
+            author: author.trimmingCharacters(in: .whitespaces),
+            coverImageData: coverImageData
+        )
+
+        modelContext.insert(newBook)
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to add book: \(error.localizedDescription)"
+            return
+        }
+
+        loadBooks()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Strips everything but digits (and the ISBN-10 "X" check digit) so pasted
+    /// ISBNs with hyphens, spaces, or stray newlines from a copied web page still resolve.
+    static func sanitizeISBN(_ raw: String) -> String {
+        raw.uppercased().filter { $0.isNumber || $0 == "X" }
+    }
+
     func updateBook(_ book: Book, title: String, author: String, coverImageData: Data?) {
         book.title = title
         book.author = author
@@ -84,7 +118,26 @@ class LibraryViewModel: ObservableObject {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Only one book can be "currently reading" at a time — the widget has a single slot to show,
+    /// so setting a new one clears the flag on whichever book had it before.
+    func setCurrentlyReading(_ book: Book, isCurrentlyReading: Bool) {
+        if isCurrentlyReading {
+            for other in books where other !== book {
+                other.isCurrentlyReading = false
+            }
+        }
+        book.isCurrentlyReading = isCurrentlyReading
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to update book: \(error.localizedDescription)"
+        }
+        loadBooks()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func deleteBook(_ book: Book) {
+        removeBookFromCompositions(book)
         modelContext.delete(book)
         do {
             try modelContext.save()
@@ -93,5 +146,16 @@ class LibraryViewModel: ObservableObject {
         }
         loadBooks()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// `ComposedBook.book` has no inverse relationship back to `Book`, so SwiftData
+    /// can't automatically clear a table placement when its book is deleted — leaving
+    /// a dangling reference that crashes ("model instance was invalidated") the next
+    /// time the Table view reads it. Strip the book off the table first.
+    private func removeBookFromCompositions(_ book: Book) {
+        guard let compositions = try? modelContext.fetch(FetchDescriptor<CoffeeTableComposition>()) else { return }
+        for composition in compositions {
+            composition.items.removeAll { $0.book === book }
+        }
     }
 }

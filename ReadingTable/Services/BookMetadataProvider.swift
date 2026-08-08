@@ -107,11 +107,14 @@ actor OpenLibraryMetadataService: BookMetadataProvider {
     func fetchCoverImage(for isbn: String) async throws -> Data? {
         let urlString = "https://covers.openlibrary.org/b/isbn/\(isbn)-M.jpg"
         guard let url = URL(string: urlString) else { return nil }
-        
+
         let (data, response) = try await session.data(from: url)
-        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
-            return data
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            return nil
         }
-        return nil
+        // When OpenLibrary has no cover for an ISBN it still returns HTTP 200,
+        // but with a tiny 1x1 placeholder GIF (~43 bytes) instead of a real photo.
+        guard data.count > 1_000 else { return nil }
+        return data
     }
 }

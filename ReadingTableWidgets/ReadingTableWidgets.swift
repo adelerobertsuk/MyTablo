@@ -22,8 +22,8 @@ struct Provider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
     }
 
-    /// Placeholder "current read" logic: just the most recently added book.
-    /// There's no real currently-reading flag on `Book` yet.
+    /// Prefers the book the user has explicitly flagged as "currently reading";
+    /// falls back to the most recently added book if none is flagged.
     private static func fetchCurrentRead() -> CurrentReadPreview? {
         guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
             return nil
@@ -42,12 +42,20 @@ struct Provider: TimelineProvider {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             let context = ModelContext(container)
 
-            var descriptor = FetchDescriptor<Book>(sortBy: [SortDescriptor(\.addedDate, order: .reverse)])
-            descriptor.fetchLimit = 1
-            guard let latestBook = try context.fetch(descriptor).first else { return nil }
+            var currentlyReadingDescriptor = FetchDescriptor<Book>(
+                predicate: #Predicate { $0.isCurrentlyReading },
+                sortBy: [SortDescriptor(\.addedDate, order: .reverse)]
+            )
+            currentlyReadingDescriptor.fetchLimit = 1
 
-            let coverImage = latestBook.coverImageData.flatMap { UIImage(data: $0) }
-            return CurrentReadPreview(title: latestBook.title, author: latestBook.author, coverImage: coverImage)
+            var mostRecentDescriptor = FetchDescriptor<Book>(sortBy: [SortDescriptor(\.addedDate, order: .reverse)])
+            mostRecentDescriptor.fetchLimit = 1
+
+            let book = try context.fetch(currentlyReadingDescriptor).first ?? (try context.fetch(mostRecentDescriptor).first)
+            guard let book else { return nil }
+
+            let coverImage = book.coverImageData.flatMap { UIImage(data: $0) }
+            return CurrentReadPreview(title: book.title, author: book.author, coverImage: coverImage)
         } catch {
             return nil
         }

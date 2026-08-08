@@ -1,0 +1,17 @@
+{
+  "toolPermission": "strict",
+  "permissions": {
+    "allow": [],
+    "ask": [],
+    "deny": [
+      "write_file(*)",
+      "command(*)",
+      "unsandboxed(*)",
+      "mcp(*)",
+      "execute_url(*)"
+    ]
+  },
+  "trustedWorkspaces": [
+    "/Users/adeleroberts/Documents/ReadingTable"
+  ]
+}

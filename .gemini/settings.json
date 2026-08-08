@@ -1,0 +1,28 @@
+{
+  "general": {
+    "defaultApprovalMode": "plan",
+    "plan": {
+      "enabled": true
+    }
+  },
+  "tools": {
+    "core": [
+      "read_file",
+      "read_many_files",
+      "list_directory",
+      "glob",
+      "grep_search",
+      "google_web_search",
+      "web_fetch",
+      "get_internal_docs",
+      "ask_user"
+    ]
+  },
+  "security": {
+    "disableYoloMode": true,
+    "disableAlwaysAllow": true,
+    "enablePermanentToolApproval": false,
+    "autoAddToPolicyByDefault": false
+  },
+  "useWriteTodos": false
+}

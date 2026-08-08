@@ -8,19 +8,22 @@ final class Book: Identifiable {
     var author: String
     var coverImageData: Data?
     var addedDate: Date
-    
+    var isCurrentlyReading: Bool = false
+
     init(
         isbn: String,
         title: String,
         author: String,
         coverImageData: Data? = nil,
-        addedDate: Date = Date()
+        addedDate: Date = Date(),
+        isCurrentlyReading: Bool = false
     ) {
         self.isbn = isbn
         self.title = title
         self.author = author
         self.coverImageData = coverImageData
         self.addedDate = addedDate
+        self.isCurrentlyReading = isCurrentlyReading
     }
 }
 
