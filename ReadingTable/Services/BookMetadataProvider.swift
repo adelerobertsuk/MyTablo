@@ -11,6 +11,20 @@ struct BookMetadata {
     let isbn: String
 }
 
+enum BookMetadataError: LocalizedError {
+    case notFound
+    case lookupFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .notFound:
+            return "We couldn't find a book with that ISBN. Double-check the number, or add the book's details yourself."
+        case .lookupFailed:
+            return "Something went wrong looking up that book. Please check your connection and try again."
+        }
+    }
+}
+
 // MARK: - Mock Implementation
 
 actor MockBookMetadataService: BookMetadataProvider {
@@ -39,16 +53,11 @@ actor MockBookMetadataService: BookMetadataProvider {
     
     func fetchMetadata(for isbn: String) async throws -> BookMetadata {
         try await Task.sleep(nanoseconds: 500_000_000)
-        
-        if let book = mockBooks[isbn] {
-            return book
+
+        guard let book = mockBooks[isbn] else {
+            throw BookMetadataError.notFound
         }
-        
-        return BookMetadata(
-            title: "Unknown Book",
-            author: "Unknown Author",
-            isbn: isbn
-        )
+        return book
     }
     
     func fetchCoverImage(for isbn: String) async throws -> Data? {
@@ -69,34 +78,30 @@ actor OpenLibraryMetadataService: BookMetadataProvider {
     func fetchMetadata(for isbn: String) async throws -> BookMetadata {
         let urlString = "https://openlibrary.org/api/books?bibkeys=ISBN:\(isbn)&format=json&jscmd=data"
         guard let url = URL(string: urlString) else {
-            throw NSError(domain: "Invalid URL", code: -1)
+            throw BookMetadataError.lookupFailed
         }
-        
+
         let (data, response) = try await session.data(from: url)
-        
+
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
-            throw NSError(domain: "Invalid response", code: -1)
+            throw BookMetadataError.lookupFailed
         }
-        
+
         if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
            let bookData = json["ISBN:\(isbn)"] as? [String: Any],
            let title = bookData["title"] as? String {
-            
+
             var author = "Unknown Author"
             if let authors = bookData["authors"] as? [[String: Any]],
                let firstAuthor = authors.first?["name"] as? String {
                 author = firstAuthor
             }
-            
+
             return BookMetadata(title: title, author: author, isbn: isbn)
         }
-        
-        return BookMetadata(
-            title: "Unknown Book",
-            author: "Unknown Author",
-            isbn: isbn
-        )
+
+        throw BookMetadataError.notFound
     }
     
     func fetchCoverImage(for isbn: String) async throws -> Data? {

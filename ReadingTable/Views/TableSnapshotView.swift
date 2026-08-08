@@ -44,8 +44,12 @@ struct ShareSheet: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
         if let popover = controller.popoverPresentationController {
-            popover.sourceView = controller.view
-            popover.sourceRect = CGRect(x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 0, height: 0)
+            let keyWindow = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap { $0.windows }
+                .first { $0.isKeyWindow }
+            popover.sourceView = keyWindow
+            popover.sourceRect = CGRect(x: keyWindow?.bounds.midX ?? 0, y: keyWindow?.bounds.midY ?? 0, width: 0, height: 0)
             popover.permittedArrowDirections = []
         }
         return controller

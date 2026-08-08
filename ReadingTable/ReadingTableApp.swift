@@ -58,18 +58,32 @@ struct ReadingTableApp: App {
     private static func migrateExistingStoreIfNeeded(to destinationURL: URL) {
         let defaults = UserDefaults(suiteName: readingTableAppGroupID)
         guard defaults?.bool(forKey: "hasMigratedToSharedStore") != true else { return }
-        defer { defaults?.set(true, forKey: "hasMigratedToSharedStore") }
 
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let oldStoreURL = appSupportURL.appendingPathComponent("default.store")
-        guard FileManager.default.fileExists(atPath: oldStoreURL.path) else { return }
+        guard FileManager.default.fileExists(atPath: oldStoreURL.path) else {
+            // Nothing to migrate (fresh install) — safe to mark as done.
+            defaults?.set(true, forKey: "hasMigratedToSharedStore")
+            return
+        }
 
+        var migrationSucceeded = true
         for suffix in ["", "-wal", "-shm"] {
             let source = URL(fileURLWithPath: oldStoreURL.path + suffix)
             let destination = URL(fileURLWithPath: destinationURL.path + suffix)
             try? FileManager.default.removeItem(at: destination)
             guard FileManager.default.fileExists(atPath: source.path) else { continue }
-            try? FileManager.default.copyItem(at: source, to: destination)
+            do {
+                try FileManager.default.copyItem(at: source, to: destination)
+            } catch {
+                migrationSucceeded = false
+            }
+        }
+
+        // Only mark as done if every file that needed copying actually copied —
+        // a failed attempt should retry on the next launch, not silently give up.
+        if migrationSucceeded {
+            defaults?.set(true, forKey: "hasMigratedToSharedStore")
         }
     }
 }

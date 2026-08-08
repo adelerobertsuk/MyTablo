@@ -38,6 +38,13 @@ struct StyleView: View {
                 }
                 .ignoresSafeArea()
 
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        compositionViewModel.selectedBook = nil
+                        compositionViewModel.selectedDecoration = nil
+                    }
+
                 Group {
                     if let composition = compositionViewModel.currentComposition {
                         ForEach(composition.items.sorted(by: { $0.zIndex < $1.zIndex })) { composedBook in
@@ -141,10 +148,6 @@ struct StyleView: View {
                         Spacer()
                     }
                 }
-                .onTapGesture {
-                    compositionViewModel.selectedBook = nil
-                    compositionViewModel.selectedDecoration = nil
-                }
             }
             .navigationTitle("Style")
             .navigationBarTitleDisplayMode(.inline)
@@ -168,6 +171,14 @@ struct StyleView: View {
             StickerPickerView { imageName in
                 compositionViewModel.addDecoration(imageName: imageName)
             }
+        }
+        .alert("Couldn't Save", isPresented: Binding(
+            get: { compositionViewModel.errorMessage != nil },
+            set: { if !$0 { compositionViewModel.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(compositionViewModel.errorMessage ?? "")
         }
     }
 }

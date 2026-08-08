@@ -30,6 +30,14 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         return max(maxItemZ, maxDecorationZ) + 1
     }
 
+    private func save() {
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to save your table: \(error.localizedDescription)"
+        }
+    }
+
     func loadCompositions() {
         do {
             let descriptor = FetchDescriptor<CoffeeTableComposition>(
@@ -47,7 +55,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
     func createDefaultComposition() {
         let composition = CoffeeTableComposition(name: "My Table")
         modelContext.insert(composition)
-        try? modelContext.save()
+        save()
         loadCompositions()
     }
     
@@ -68,7 +76,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         composedBook.zIndex = nextZIndex(in: composition)
 
         composition.items.append(composedBook)
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 
@@ -77,7 +85,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
 
         let composedBook = ComposedBook(book: book, x: 150, y: 200, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
         composition.items.append(composedBook)
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 
@@ -90,7 +98,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             composition.items[index].rotation = rotation
             composition.items[index].scale = scale
 
-            try? modelContext.save()
+            save()
             currentComposition = composition
         }
     }
@@ -99,7 +107,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         guard let composition = currentComposition else { return }
 
         composition.items.removeAll { $0.id == book.id }
-        try? modelContext.save()
+        save()
         currentComposition = composition
         selectedBook = nil
     }
@@ -111,7 +119,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             composition.items[index].zIndex = nextZIndex(in: composition)
         }
 
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 
@@ -119,7 +127,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         guard let composition = currentComposition else { return }
 
         composition.surfaceImageName = name
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 
@@ -128,7 +136,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
 
         let decoration = Decoration(imageName: imageName, x: 150, y: 200, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
         composition.decorations.append(decoration)
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 
@@ -141,7 +149,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             composition.decorations[index].rotation = rotation
             composition.decorations[index].scale = scale
 
-            try? modelContext.save()
+            save()
             currentComposition = composition
         }
     }
@@ -150,7 +158,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         guard let composition = currentComposition else { return }
 
         composition.decorations.removeAll { $0.id == decoration.id }
-        try? modelContext.save()
+        save()
         currentComposition = composition
         selectedDecoration = nil
     }
@@ -162,7 +170,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             composition.decorations[index].zIndex = nextZIndex(in: composition)
         }
 
-        try? modelContext.save()
+        save()
         currentComposition = composition
     }
 }

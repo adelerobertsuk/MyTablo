@@ -62,6 +62,8 @@ class LibraryViewModel: ObservableObject {
             loadBooks()
             isbnInput = ""
             WidgetCenter.shared.reloadAllTimelines()
+        } catch let error as BookMetadataError {
+            errorMessage = error.errorDescription
         } catch {
             errorMessage = "Failed to add book: \(error.localizedDescription)"
         }

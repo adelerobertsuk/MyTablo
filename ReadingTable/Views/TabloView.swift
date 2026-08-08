@@ -49,16 +49,18 @@ struct TabloView: View {
                     if controlsRevealed {
                         revealedControlBar
                             .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    controlsRevealed = true
+                                }
+                            }
                     }
                 }
                 .frame(height: 110)
                 .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        controlsRevealed = true
-                    }
-                }
             }
         }
         .fullScreenCover(isPresented: $showLibrary) {
@@ -84,8 +86,11 @@ struct TabloView: View {
         guard let composition = compositionViewModel.currentComposition else { return }
         let renderer = ImageRenderer(content: TableSnapshotView(composition: composition))
         renderer.scale = UIScreen.main.scale
-        shareImage = renderer.uiImage
-        showShareSheet = shareImage != nil
+
+        DispatchQueue.main.async {
+            self.shareImage = renderer.uiImage
+            self.showShareSheet = self.shareImage != nil
+        }
     }
 
     private var revealedControlBar: some View {
