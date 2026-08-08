@@ -63,12 +63,12 @@ struct TabloView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .fullScreenCover(isPresented: $showLibrary) {
+        .fullScreenCover(isPresented: $showLibrary, onDismiss: refreshShareImage) {
             LibraryView(viewModel: libraryViewModel, onDismiss: { showLibrary = false }) { selectedBook in
                 compositionViewModel.addExistingBook(selectedBook)
             }
         }
-        .fullScreenCover(isPresented: $showStyle) {
+        .fullScreenCover(isPresented: $showStyle, onDismiss: refreshShareImage) {
             StyleView(
                 libraryViewModel: libraryViewModel,
                 compositionViewModel: compositionViewModel,

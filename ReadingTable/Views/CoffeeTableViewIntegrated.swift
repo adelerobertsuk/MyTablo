@@ -287,7 +287,6 @@ struct TableBookView: View {
         if isInteractive {
             ZStack(alignment: .topTrailing) {
                 coverContent
-                    .gesture(dragMagnifyRotateGesture)
                     .highPriorityGesture(
                         TapGesture(count: 2)
                             .onEnded {
@@ -305,6 +304,7 @@ struct TableBookView: View {
             .scaleEffect(composedBook.scale * magnifyBy)
             .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
             .position(x: composedBook.x + dragOffset.width, y: composedBook.y + dragOffset.height)
+            .gesture(dragMagnifyRotateGesture)
         } else {
             coverContent
                 .scaleEffect(composedBook.scale)

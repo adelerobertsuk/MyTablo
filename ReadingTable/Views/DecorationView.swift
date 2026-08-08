@@ -72,6 +72,8 @@ struct DecorationView: View {
     var body: some View {
         if isInteractive {
             cardView
+                .frame(width: 88, height: 88)
+                .contentShape(Rectangle())
                 .scaleEffect(decoration.scale * magnifyBy)
                 .rotationEffect(.degrees(decoration.rotation + rotateBy.degrees))
                 .position(x: decoration.x + dragOffset.width, y: decoration.y + dragOffset.height)
