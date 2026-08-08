@@ -8,6 +8,7 @@ private struct ShareableTableSnapshot: Transferable {
         DataRepresentation(exportedContentType: .png) { shareable in
             shareable.pngData
         }
+        .suggestedFileName("MyTablo.png")
     }
 }
 
