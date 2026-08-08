@@ -25,14 +25,14 @@ struct TableSnapshotView: View {
         }
         .frame(width: size.width, height: size.height)
         .clipped()
-        .overlay(alignment: .bottomTrailing) {
-            Text("Tablo")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundColor(.white.opacity(0.55))
-                .padding(.horizontal, 10)
+        .overlay(alignment: .bottom) {
+            Text("Made on Tablo")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .padding(.trailing, 8)
-                .padding(.bottom, 10)
+                .background(Color.black.opacity(0.35), in: Capsule())
+                .padding(.bottom, 14)
         }
     }
 }
