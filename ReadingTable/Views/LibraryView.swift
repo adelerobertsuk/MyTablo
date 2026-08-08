@@ -62,13 +62,15 @@ struct LibraryView: View {
                 if let onDismiss {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button(action: onDismiss) {
-                            Image(systemName: "chevron.down")
+                            Label("Close Library", systemImage: "chevron.down")
+                                .labelStyle(.iconOnly)
                         }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showAddBook = true }) {
-                        Image(systemName: "plus")
+                        Label("Add book", systemImage: "plus")
+                            .labelStyle(.iconOnly)
                     }
                 }
             }
@@ -243,8 +245,10 @@ struct BookTileView: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                             .background(Circle().fill(Color.black.opacity(0.5)).frame(width: 18, height: 18))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
                     }
-                    .padding(6)
+                    .accessibilityLabel("Delete \(book.title)")
                 }
             }
 
