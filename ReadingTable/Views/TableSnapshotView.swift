@@ -26,6 +26,15 @@ struct TableSnapshotView: View {
         }
         .frame(width: size.width, height: size.height)
         .clipped()
+        .overlay(alignment: .bottomTrailing) {
+            Text("Tablo")
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(.white.opacity(0.55))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .padding(.trailing, 8)
+                .padding(.bottom, 10)
+        }
     }
 }
 
@@ -33,7 +42,13 @@ struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = controller.popoverPresentationController {
+            popover.sourceView = controller.view
+            popover.sourceRect = CGRect(x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        return controller
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}

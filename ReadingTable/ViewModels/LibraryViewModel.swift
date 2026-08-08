@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import Combine
+import WidgetKit
 
 @MainActor
 class LibraryViewModel: ObservableObject {
@@ -57,9 +58,10 @@ class LibraryViewModel: ObservableObject {
             
             modelContext.insert(newBook)
             try modelContext.save()
-            
+
             loadBooks()
             isbnInput = ""
+            WidgetCenter.shared.reloadAllTimelines()
         } catch {
             errorMessage = "Failed to add book: \(error.localizedDescription)"
         }
@@ -77,6 +79,7 @@ class LibraryViewModel: ObservableObject {
             errorMessage = "Failed to update book: \(error.localizedDescription)"
         }
         loadBooks()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func deleteBook(_ book: Book) {
@@ -87,5 +90,6 @@ class LibraryViewModel: ObservableObject {
             errorMessage = "Failed to delete book: \(error.localizedDescription)"
         }
         loadBooks()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

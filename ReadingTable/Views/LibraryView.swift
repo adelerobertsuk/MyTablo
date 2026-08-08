@@ -303,13 +303,24 @@ struct CustomCoverPicker: View {
             }
             .onChange(of: selectedItem) { _, newItem in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
                         await MainActor.run {
-                            coverImageData = data
+                            coverImageData = image.normalizedOrientation().jpegData(compressionQuality: 0.9) ?? data
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private extension UIImage {
+    /// Bakes imageOrientation into the pixel data as `.up`, since WidgetKit
+    /// doesn't reliably honor a UIImage's orientation tag the way UIKit does.
+    func normalizedOrientation() -> UIImage {
+        guard imageOrientation != .up else { return self }
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in draw(in: CGRect(origin: .zero, size: size)) }
     }
 }

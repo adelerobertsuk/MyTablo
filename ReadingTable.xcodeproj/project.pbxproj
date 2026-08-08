@@ -6,14 +6,86 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7FE088F130269E8E0005C7E7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FE088F030269E8E0005C7E7 /* WidgetKit.framework */; };
+		7FE088F330269E8E0005C7E7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FE088F230269E8E0005C7E7 /* SwiftUI.framework */; };
+		7FE0890430269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7FE0890230269E8E0005C7E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7F7041873024BDCB00ED99CF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7FE088ED30269E8E0005C7E7;
+			remoteInfo = ReadingTableWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7FE0890930269E8E0005C7E7 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7FE0890430269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		7F70418F3024BDCB00ED99CF /* ReadingTable.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReadingTable.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReadingTableWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FE088F030269E8E0005C7E7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7FE088F230269E8E0005C7E7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7FE0890D3026A30E0005C7E7 /* ReadingTableWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadingTableWidgetsExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTableWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+		};
+		7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "ReadingTableWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Book.swift,
+				Models/Decoration.swift,
+				Views/Widgets/SmallWidgetView.swift,
+			);
+			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+		};
+		7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTable" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ReadingTableWidgets.swift,
+			);
+			target = 7F70418E3024BDCB00ED99CF /* ReadingTable */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7F7041913024BDCB00ED99CF /* ReadingTable */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7FE0890B30269EA90005C7E7 /* Exceptions for "ReadingTable" folder in "ReadingTableWidgetsExtension" target */,
+			);
 			path = ReadingTable;
+			sourceTree = "<group>";
+		};
+		7FE088F430269E8E0005C7E7 /* ReadingTableWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7FE0890F3026A4220005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTable" target */,
+				7FE0890530269E8E0005C7E7 /* Exceptions for "ReadingTableWidgets" folder in "ReadingTableWidgetsExtension" target */,
+			);
+			path = ReadingTableWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,13 +98,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7FE088EB30269E8E0005C7E7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7FE088F330269E8E0005C7E7 /* SwiftUI.framework in Frameworks */,
+				7FE088F130269E8E0005C7E7 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		7F7041863024BDCB00ED99CF = {
 			isa = PBXGroup;
 			children = (
+				7FE0890D3026A30E0005C7E7 /* ReadingTableWidgetsExtension.entitlements */,
 				7F7041913024BDCB00ED99CF /* ReadingTable */,
+				7FE088F430269E8E0005C7E7 /* ReadingTableWidgets */,
+				7FE088EF30269E8E0005C7E7 /* Frameworks */,
 				7F7041903024BDCB00ED99CF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +125,18 @@
 			isa = PBXGroup;
 			children = (
 				7F70418F3024BDCB00ED99CF /* ReadingTable.app */,
+				7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		7FE088EF30269E8E0005C7E7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7FE088F030269E8E0005C7E7 /* WidgetKit.framework */,
+				7FE088F230269E8E0005C7E7 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +149,12 @@
 				7F70418B3024BDCB00ED99CF /* Sources */,
 				7F70418C3024BDCB00ED99CF /* Frameworks */,
 				7F70418D3024BDCB00ED99CF /* Resources */,
+				7FE0890930269E8E0005C7E7 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				7FE0890330269E8E0005C7E7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7F7041913024BDCB00ED99CF /* ReadingTable */,
@@ -69,6 +165,28 @@
 			productName = ReadingTable;
 			productReference = 7F70418F3024BDCB00ED99CF /* ReadingTable.app */;
 			productType = "com.apple.product-type.application";
+		};
+		7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "ReadingTableWidgetsExtension" */;
+			buildPhases = (
+				7FE088EA30269E8E0005C7E7 /* Sources */,
+				7FE088EB30269E8E0005C7E7 /* Frameworks */,
+				7FE088EC30269E8E0005C7E7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7FE088F430269E8E0005C7E7 /* ReadingTableWidgets */,
+			);
+			name = ReadingTableWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = ReadingTableWidgetsExtension;
+			productReference = 7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +199,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					7F70418E3024BDCB00ED99CF = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					7FE088ED30269E8E0005C7E7 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -100,12 +221,20 @@
 			projectRoot = "";
 			targets = (
 				7F70418E3024BDCB00ED99CF /* ReadingTable */,
+				7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		7F70418D3024BDCB00ED99CF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7FE088EC30269E8E0005C7E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +251,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7FE088EA30269E8E0005C7E7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7FE0890330269E8E0005C7E7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+			targetProxy = 7FE0890230269E8E0005C7E7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7F7041983024BDCC00ED99CF /* Debug */ = {
@@ -251,6 +395,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ReadingTable/ReadingTable.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FVJG2288UR;
@@ -285,6 +430,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ReadingTable/ReadingTable.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FVJG2288UR;
@@ -314,6 +460,68 @@
 			};
 			name = Release;
 		};
+		7FE0890730269E8E0005C7E7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = ReadingTableWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FVJG2288UR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ReadingTableWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.adeleroberts-com.adeleroberts-com.adeleroberts.ReadingTable.ReadingTableWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7FE0890830269E8E0005C7E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = ReadingTableWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FVJG2288UR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ReadingTableWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.adeleroberts-com.adeleroberts-com.adeleroberts.ReadingTable.ReadingTableWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -331,6 +539,15 @@
 			buildConfigurations = (
 				7F70419B3024BDCC00ED99CF /* Debug */,
 				7F70419C3024BDCC00ED99CF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "ReadingTableWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7FE0890730269E8E0005C7E7 /* Debug */,
+				7FE0890830269E8E0005C7E7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
