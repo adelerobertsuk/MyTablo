@@ -1,4 +1,15 @@
 import SwiftUI
+import UniformTypeIdentifiers
+
+private struct ShareableTableSnapshot: Transferable {
+    let pngData: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .png) { shareable in
+            shareable.pngData
+        }
+    }
+}
 
 struct TabloView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
@@ -8,6 +19,7 @@ struct TabloView: View {
     @State private var showLibrary = false
     @State private var showStyle = false
     @State private var shareImage: UIImage?
+    @State private var sharePNGData: Data?
 
     var body: some View {
         ZStack {
@@ -85,6 +97,7 @@ struct TabloView: View {
 
         DispatchQueue.main.async {
             self.shareImage = renderer.uiImage
+            self.sharePNGData = renderer.uiImage?.pngData()
         }
     }
 
@@ -116,9 +129,9 @@ struct TabloView: View {
                 }
             }
 
-            if let shareImage {
+            if let shareImage, let sharePNGData {
                 ShareLink(
-                    item: Image(uiImage: shareImage),
+                    item: ShareableTableSnapshot(pngData: sharePNGData),
                     message: Text("Here's what's on MyTablo right now 📚✨"),
                     preview: SharePreview("MyTablo", image: Image(uiImage: shareImage))
                 ) {
