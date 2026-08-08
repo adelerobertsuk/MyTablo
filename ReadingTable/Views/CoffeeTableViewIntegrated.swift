@@ -101,19 +101,23 @@ struct StyleView: View {
                                 Image(systemName: "leaf.fill")
                                     .font(.subheadline)
                                     .foregroundColor(.white)
-                                    .padding(10)
+                                    .frame(width: 44, height: 44)
                                     .background(Color(red: 0.1, green: 0.1, blue: 0.12))
                                     .clipShape(Circle())
                             }
+                            .accessibilityLabel("Add sticker")
 
                             Button(action: { snapToGridEnabled.toggle() }) {
                                 Image(systemName: "square.grid.2x2")
                                     .font(.subheadline)
                                     .foregroundColor(snapToGridEnabled ? .white : .primary)
-                                    .padding(10)
+                                    .frame(width: 44, height: 44)
                                     .background(snapToGridEnabled ? Color(red: 0.1, green: 0.1, blue: 0.12) : Color(.systemGray6))
                                     .clipShape(Circle())
                             }
+                            .accessibilityLabel("Snap to grid")
+                            .accessibilityValue(snapToGridEnabled ? "On" : "Off")
+                            .accessibilityHint("Rounds book positions to a grid")
 
                             Spacer()
 
@@ -151,7 +155,8 @@ struct StyleView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: onDismiss) {
-                        Image(systemName: "chevron.down")
+                        Label("Close Style", systemImage: "chevron.down")
+                            .labelStyle(.iconOnly)
                     }
                 }
             }
@@ -231,7 +236,10 @@ struct TableBookView: View {
                         .font(.system(size: 18))
                         .foregroundColor(.white)
                         .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 16, height: 16))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
+                .accessibilityLabel("Remove \(composedBook.book?.title ?? "book") from table")
                 .offset(x: 8, y: -8)
             }
         }
