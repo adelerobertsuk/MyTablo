@@ -314,7 +314,7 @@ private struct CalendarDecorationContent: View {
 /// desk barometer casing, matching TravelClockFace's material language, with the live reading
 /// layered precisely on the dial instead of a generic white "--°" card.
 private struct WeatherDecorationContent: View {
-    @StateObject private var weatherService = WeatherService()
+    @ObservedObject private var weatherService = WeatherService.shared
     @Environment(\.scenePhase) private var scenePhase
 
     private let brassLight = Color(red: 0.87, green: 0.73, blue: 0.4)
@@ -606,19 +606,53 @@ private struct LocationDecorationContent: View {
     }
 }
 
+/// Calculator exemplar, matching DigitalClockFace's dark-plastic-and-amber material family
+/// per the 2026-08-08 design review (DESIGN_REVIEW_LIVE_OBJECTS.md): a tactile pocket
+/// calculator casing with an LED-style "0" readout and a grid of key caps, rather than a
+/// generic white icon card.
 private struct CalculatorDecorationContent: View {
+    private let caseTop = Color(red: 0.2, green: 0.18, blue: 0.16)
+    private let caseBottom = Color(red: 0.09, green: 0.08, blue: 0.08)
+    private let amber = Color(red: 1.0, green: 0.56, blue: 0.16)
+
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "divide.square.fill")
-                .font(.system(size: 26))
-                .foregroundColor(Color(red: 0.2, green: 0.55, blue: 0.45))
-            Text("Calculator")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.black.opacity(0.6))
+        VStack(spacing: 7) {
+            Text("0")
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .foregroundColor(amber)
+                .shadow(color: amber.opacity(0.75), radius: 3)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.black.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+
+            VStack(spacing: 4) {
+                ForEach(0..<4, id: \.self) { _ in
+                    HStack(spacing: 4) {
+                        ForEach(0..<4, id: \.self) { _ in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.white.opacity(0.14))
+                                .frame(height: 8)
+                        }
+                    }
+                }
+            }
         }
-        .frame(width: 90, height: 90)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(8)
+        .frame(width: 78, height: 92)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(LinearGradient(colors: [caseTop, caseBottom], startPoint: .top, endPoint: .bottom))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.12), .clear], startPoint: .top, endPoint: .center))
+                )
+        )
     }
 }
 
@@ -654,13 +688,18 @@ struct CalculatorSheetView: View {
         ["0", ".", "="]
     ]
 
+    private let caseTop = Color(red: 0.2, green: 0.18, blue: 0.16)
+    private let caseBottom = Color(red: 0.09, green: 0.08, blue: 0.08)
+    private let amber = Color(red: 1.0, green: 0.56, blue: 0.16)
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
                 Spacer()
                 Text(display)
-                    .font(.system(size: 56, weight: .light, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 56, weight: .light, design: .monospaced))
+                    .foregroundColor(amber)
+                    .shadow(color: amber.opacity(0.65), radius: 6)
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -676,6 +715,10 @@ struct CalculatorSheetView: View {
                                     .frame(maxWidth: .infinity, minHeight: 60)
                                     .background(backgroundColor(for: symbol))
                                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    )
                             }
                         }
                     }
@@ -683,26 +726,34 @@ struct CalculatorSheetView: View {
                 }
                 Spacer()
             }
+            .background(
+                LinearGradient(colors: [caseTop, caseBottom], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+            )
             .navigationTitle("Calculator")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(caseBottom, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
+                        .tint(amber)
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private func backgroundColor(for symbol: String) -> Color {
-        if symbol == "C" || symbol == "±" || symbol == "%" { return Color(.systemGray4) }
-        if ["÷", "×", "−", "+", "="].contains(symbol) { return Color(red: 0.95, green: 0.55, blue: 0.15) }
-        return Color(.systemGray5)
+        if symbol == "C" || symbol == "±" || symbol == "%" { return Color.white.opacity(0.16) }
+        if ["÷", "×", "−", "+", "="].contains(symbol) { return amber }
+        return Color.white.opacity(0.08)
     }
 
     private func foregroundColor(for symbol: String) -> Color {
-        if ["÷", "×", "−", "+", "="].contains(symbol) { return .white }
-        if symbol == "C" || symbol == "±" || symbol == "%" { return .black }
-        return .primary
+        if ["÷", "×", "−", "+", "="].contains(symbol) { return caseBottom }
+        return .white
     }
 
     private func handleTap(_ symbol: String) {

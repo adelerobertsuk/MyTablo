@@ -203,11 +203,22 @@ struct StyleView: View {
                                     .clipShape(Circle())
                             }
 
-                            // Calculator and Music buttons stay hidden from the picker per the
-                            // 2026-08-08 design review (see DESIGN_REVIEW_LIVE_OBJECTS.md) — their tile
-                            // visuals aren't approved for release yet. Existing placed decorations still
-                            // render normally; Weather has now been rebuilt as a brass barometer to match
-                            // the approved Clock exemplar, pending Adele/Kate's visual sign-off.
+                            Button(action: {
+                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName)
+                            }) {
+                                Image(systemName: "divide.square.fill")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+                                    .clipShape(Circle())
+                            }
+
+                            // Music button stays hidden from the picker per the 2026-08-08 design
+                            // review (see DESIGN_REVIEW_LIVE_OBJECTS.md) — its tile visual isn't
+                            // approved for release yet. Existing placed decorations still render
+                            // normally. Calculator has now been rebuilt to match the approved Clock
+                            // exemplar's dark-casing/amber-LED material, pending Adele/Kate's sign-off.
 
                             Button(action: { snapToGridEnabled.toggle() }) {
                                 Image(systemName: "square.grid.2x2")

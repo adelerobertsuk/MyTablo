@@ -5,6 +5,8 @@ import WeatherKit
 
 @MainActor
 final class WeatherService: NSObject, ObservableObject {
+    static let shared = WeatherService()
+
     @Published var temperature: String = "--°"
     @Published var condition: String = ""
     @Published var symbolName: String = "cloud.fill"
@@ -14,13 +16,23 @@ final class WeatherService: NSObject, ObservableObject {
 
     private let locationManager = CLLocationManager()
     private let weatherKitService = WeatherKit.WeatherService.shared
+    private var lastAttemptDate: Date?
+    private let minimumRetryInterval: TimeInterval = 30
 
     override init() {
         super.init()
         locationManager.delegate = self
     }
 
+    /// Called both on first appear and every time the app comes back to the foreground.
+    /// Without a minimum interval, switching away from the app and back (e.g. to dictate a
+    /// message) restarts the whole "Reading the sky…" → fetch cycle each time, which on a
+    /// device that can't get a fast location fix looks like the object flickering/popping.
     func requestLocationAndFetchWeather() {
+        if let lastAttemptDate, Date().timeIntervalSince(lastAttemptDate) < minimumRetryInterval, !isLoading {
+            return
+        }
+        lastAttemptDate = Date()
         switch locationManager.authorizationStatus {
         case .notDetermined:
             isLoading = true
@@ -77,7 +89,10 @@ extension WeatherService: CLLocationManagerDelegate {
             switch status {
             case .authorizedWhenInUse, .authorizedAlways:
                 self.accessDenied = false
+                self.isLoading = true
+                self.fetchFailed = false
                 manager.requestLocation()
+                self.startTimeoutWatch()
             case .denied, .restricted:
                 self.accessDenied = true
             default:
