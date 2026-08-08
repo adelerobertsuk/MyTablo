@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-               BuildableName = "ReadingTable.app"
-               BlueprintName = "ReadingTable"
-               ReferencedContainer = "container:ReadingTable.xcodeproj">
+               BuildableName = "MyTablo.app"
+               BlueprintName = "MyTablo"
+               ReferencedContainer = "container:MyTablo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-            BuildableName = "ReadingTable.app"
-            BlueprintName = "ReadingTable"
-            ReferencedContainer = "container:ReadingTable.xcodeproj">
+            BuildableName = "MyTablo.app"
+            BlueprintName = "MyTablo"
+            ReferencedContainer = "container:MyTablo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-            BuildableName = "ReadingTable.app"
-            BlueprintName = "ReadingTable"
-            ReferencedContainer = "container:ReadingTable.xcodeproj">
+            BuildableName = "MyTablo.app"
+            BlueprintName = "MyTablo"
+            ReferencedContainer = "container:MyTablo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

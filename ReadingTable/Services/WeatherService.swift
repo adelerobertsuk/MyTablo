@@ -30,6 +30,7 @@ final class WeatherService: NSObject, ObservableObject {
             isLoading = true
             fetchFailed = false
             locationManager.requestLocation()
+            startTimeoutWatch()
         case .denied, .restricted:
             isLoading = false
             accessDenied = true
@@ -53,6 +54,19 @@ final class WeatherService: NSObject, ObservableObject {
             print("WeatherKit fetch failed: \(error)")
         }
         isLoading = false
+    }
+
+    /// `CLLocationManager.requestLocation()` can hang indefinitely with no callback at all when
+    /// no fix is available (e.g. a Wi-Fi-only iPad indoors, with no GPS chip and no known network
+    /// to triangulate from) — this turns that silent hang into the same honest "unavailable"
+    /// message used for a real fetch failure, instead of "Reading the sky…" forever.
+    private func startTimeoutWatch() {
+        Task {
+            try? await Task.sleep(for: .seconds(15))
+            guard self.isLoading else { return }
+            self.isLoading = false
+            self.fetchFailed = true
+        }
     }
 }
 

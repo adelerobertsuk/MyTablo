@@ -17,9 +17,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7FE088ED30269E8E0005C7E7"
-               BuildableName = "ReadingTableWidgetsExtension.appex"
-               BlueprintName = "ReadingTableWidgetsExtension"
-               ReferencedContainer = "container:ReadingTable.xcodeproj">
+               BuildableName = "MyTabloWidgetsExtension.appex"
+               BlueprintName = "MyTabloWidgetsExtension"
+               ReferencedContainer = "container:MyTablo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,9 +31,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-               BuildableName = "ReadingTable.app"
-               BlueprintName = "ReadingTable"
-               ReferencedContainer = "container:ReadingTable.xcodeproj">
+               BuildableName = "MyTablo.app"
+               BlueprintName = "MyTablo"
+               ReferencedContainer = "container:MyTablo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -64,18 +64,18 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7FE088ED30269E8E0005C7E7"
-            BuildableName = "ReadingTableWidgetsExtension.appex"
-            BlueprintName = "ReadingTableWidgetsExtension"
-            ReferencedContainer = "container:ReadingTable.xcodeproj">
+            BuildableName = "MyTabloWidgetsExtension.appex"
+            BlueprintName = "MyTabloWidgetsExtension"
+            ReferencedContainer = "container:MyTablo.xcodeproj">
          </BuildableReference>
       </RemoteRunnable>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-            BuildableName = "ReadingTable.app"
-            BlueprintName = "ReadingTable"
-            ReferencedContainer = "container:ReadingTable.xcodeproj">
+            BuildableName = "MyTablo.app"
+            BlueprintName = "MyTablo"
+            ReferencedContainer = "container:MyTablo.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <EnvironmentVariables>
@@ -114,9 +114,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7F70418E3024BDCB00ED99CF"
-            BuildableName = "ReadingTable.app"
-            BlueprintName = "ReadingTable"
-            ReferencedContainer = "container:ReadingTable.xcodeproj">
+            BuildableName = "MyTablo.app"
+            BlueprintName = "MyTablo"
+            ReferencedContainer = "container:MyTablo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

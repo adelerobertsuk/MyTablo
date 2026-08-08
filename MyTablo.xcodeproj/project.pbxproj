@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		7FE088F130269E8E0005C7E7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FE088F030269E8E0005C7E7 /* WidgetKit.framework */; };
 		7FE088F330269E8E0005C7E7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FE088F230269E8E0005C7E7 /* SwiftUI.framework */; };
-		7FE0890430269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7FE0890430269E8E0005C7E7 /* MyTabloWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7FE088EE30269E8E0005C7E7 /* MyTabloWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,7 +18,7 @@
 			containerPortal = 7F7041873024BDCB00ED99CF /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 7FE088ED30269E8E0005C7E7;
-			remoteInfo = ReadingTableWidgetsExtension;
+			remoteInfo = MyTabloWidgetsExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -29,7 +29,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				7FE0890430269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex in Embed Foundation Extensions */,
+				7FE0890430269E8E0005C7E7 /* MyTabloWidgetsExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -37,8 +37,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		7F70418F3024BDCB00ED99CF /* ReadingTable.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReadingTable.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReadingTableWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F70418F3024BDCB00ED99CF /* MyTablo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyTablo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FE088EE30269E8E0005C7E7 /* MyTabloWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyTabloWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7FE088F030269E8E0005C7E7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7FE088F230269E8E0005C7E7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		7FE0890D3026A30E0005C7E7 /* ReadingTableWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadingTableWidgetsExtension.entitlements; sourceTree = "<group>"; };
@@ -124,8 +124,8 @@
 		7F7041903024BDCB00ED99CF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7F70418F3024BDCB00ED99CF /* ReadingTable.app */,
-				7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */,
+				7F70418F3024BDCB00ED99CF /* MyTablo.app */,
+				7FE088EE30269E8E0005C7E7 /* MyTabloWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -142,9 +142,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		7F70418E3024BDCB00ED99CF /* ReadingTable */ = {
+		7F70418E3024BDCB00ED99CF /* MyTablo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7F70419A3024BDCC00ED99CF /* Build configuration list for PBXNativeTarget "ReadingTable" */;
+			buildConfigurationList = 7F70419A3024BDCC00ED99CF /* Build configuration list for PBXNativeTarget "MyTablo" */;
 			buildPhases = (
 				7F70418B3024BDCB00ED99CF /* Sources */,
 				7F70418C3024BDCB00ED99CF /* Frameworks */,
@@ -159,16 +159,16 @@
 			fileSystemSynchronizedGroups = (
 				7F7041913024BDCB00ED99CF /* ReadingTable */,
 			);
-			name = ReadingTable;
+			name = MyTablo;
 			packageProductDependencies = (
 			);
-			productName = ReadingTable;
-			productReference = 7F70418F3024BDCB00ED99CF /* ReadingTable.app */;
+			productName = MyTablo;
+			productReference = 7F70418F3024BDCB00ED99CF /* MyTablo.app */;
 			productType = "com.apple.product-type.application";
 		};
-		7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */ = {
+		7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "ReadingTableWidgetsExtension" */;
+			buildConfigurationList = 7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "MyTabloWidgetsExtension" */;
 			buildPhases = (
 				7FE088EA30269E8E0005C7E7 /* Sources */,
 				7FE088EB30269E8E0005C7E7 /* Frameworks */,
@@ -181,11 +181,11 @@
 			fileSystemSynchronizedGroups = (
 				7FE088F430269E8E0005C7E7 /* ReadingTableWidgets */,
 			);
-			name = ReadingTableWidgetsExtension;
+			name = MyTabloWidgetsExtension;
 			packageProductDependencies = (
 			);
-			productName = ReadingTableWidgetsExtension;
-			productReference = 7FE088EE30269E8E0005C7E7 /* ReadingTableWidgetsExtension.appex */;
+			productName = MyTabloWidgetsExtension;
+			productReference = 7FE088EE30269E8E0005C7E7 /* MyTabloWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -206,7 +206,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 7F70418A3024BDCB00ED99CF /* Build configuration list for PBXProject "ReadingTable" */;
+			buildConfigurationList = 7F70418A3024BDCB00ED99CF /* Build configuration list for PBXProject "MyTablo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -220,8 +220,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				7F70418E3024BDCB00ED99CF /* ReadingTable */,
-				7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */,
+				7F70418E3024BDCB00ED99CF /* MyTablo */,
+				7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -263,7 +263,7 @@
 /* Begin PBXTargetDependency section */
 		7FE0890330269E8E0005C7E7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 7FE088ED30269E8E0005C7E7 /* ReadingTableWidgetsExtension */;
+			target = 7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */;
 			targetProxy = 7FE0890230269E8E0005C7E7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -475,7 +475,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ReadingTableWidgets;
+				INFOPLIST_KEY_CFBundleDisplayName = "MyTablo Widgets";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -506,7 +506,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ReadingTableWidgets;
+				INFOPLIST_KEY_CFBundleDisplayName = "MyTablo Widgets";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -529,7 +529,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7F70418A3024BDCB00ED99CF /* Build configuration list for PBXProject "ReadingTable" */ = {
+		7F70418A3024BDCB00ED99CF /* Build configuration list for PBXProject "MyTablo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7F7041983024BDCC00ED99CF /* Debug */,
@@ -538,7 +538,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7F70419A3024BDCC00ED99CF /* Build configuration list for PBXNativeTarget "ReadingTable" */ = {
+		7F70419A3024BDCC00ED99CF /* Build configuration list for PBXNativeTarget "MyTablo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7F70419B3024BDCC00ED99CF /* Debug */,
@@ -547,7 +547,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "ReadingTableWidgetsExtension" */ = {
+		7FE0890630269E8E0005C7E7 /* Build configuration list for PBXNativeTarget "MyTabloWidgetsExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7FE0890730269E8E0005C7E7 /* Debug */,
