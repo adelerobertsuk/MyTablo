@@ -2,6 +2,8 @@
 
 iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled with your books.
 
+**Consumer-facing app name: MyTablo** (renamed from "Tablo" 2026-08-08 — repo name, Xcode project name, and target names are unchanged; only the display name and user-facing text changed). Use "MyTablo" in any new user-facing text, docs, or launch materials. Bundle identifier is still `com.adeleroberts.Tablo` — deliberately not yet updated to match, to avoid creating another duplicate app install mid-testing; revisit once Adele's current test round is done.
+
 ## Working with Adele
 - Adele is a **beginner** — explain concepts plainly, avoid unexplained jargon, and keep answers focused.
 - Be token-efficient: read only what's needed, keep explanations tight.

@@ -119,8 +119,8 @@ struct TabloView: View {
             if let shareImage {
                 ShareLink(
                     item: Image(uiImage: shareImage),
-                    message: Text("Here's what's on my Tablo right now 📚✨"),
-                    preview: SharePreview("Tablo", image: Image(uiImage: shareImage))
+                    message: Text("Here's what's on MyTablo right now 📚✨"),
+                    preview: SharePreview("MyTablo", image: Image(uiImage: shareImage))
                 ) {
                     VStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up")

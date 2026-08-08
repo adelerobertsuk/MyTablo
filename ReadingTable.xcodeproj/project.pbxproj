@@ -401,7 +401,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Tablo;
+				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -436,7 +436,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Tablo;
+				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

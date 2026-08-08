@@ -26,7 +26,7 @@ struct TableSnapshotView: View {
         .frame(width: size.width, height: size.height)
         .clipped()
         .overlay(alignment: .bottom) {
-            Text("Made on Tablo")
+            Text("Made on MyTablo")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 12)
