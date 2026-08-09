@@ -1085,6 +1085,8 @@ enum StickerPack: String, CaseIterable, Identifiable {
     case deskPlants = "Desk Plants"
     case coffeeHouse = "Coffee House"
     case fallDesk = "Fall Desk"
+    case papers = "Papers"
+    case retroPaper = "Retro Paper"
 
     var id: String { rawValue }
 
@@ -1147,6 +1149,35 @@ enum StickerPack: String, CaseIterable, Identifiable {
                 "Sticker-TFMSRedLeafTag",
                 "Sticker-TFMSWhiteGourd",
                 "Sticker-TFMSYellowLeaf"
+            ]
+        case .papers:
+            return [
+                "Sticker-TFMSBarelyTherePaper",
+                "Sticker-TFMSGlassinePaper",
+                "Sticker-TFMSOldPaper",
+                "Sticker-TFMSTissuePaper",
+                "Sticker-TFMSTornCreamPaper",
+                "Sticker-TFMSTornKraftPaper",
+                "Sticker-TFMSTornMusic",
+                "Sticker-TFMSTornSchoolPaper",
+                "Sticker-TFMSTornSpiralPaper",
+                "Sticker-TFMSWhiteCreasedPaper"
+            ]
+        case .retroPaper:
+            return [
+                "Sticker-TFMSBluePaper",
+                "Sticker-TFMSCrumpledPaper",
+                "Sticker-TFMSGreyPaper",
+                "Sticker-TFMSGridPaper",
+                "Sticker-TFMSPinMemo",
+                "Sticker-TFMSPinkGridScrap",
+                "Sticker-TFMSQualityPaper",
+                "Sticker-TFMSRippedSpiralPaper",
+                "Sticker-TFMSTornCream",
+                "Sticker-TFMSTornExercisePage",
+                "Sticker-TFMSTornKraftMemo",
+                "Sticker-TFMSTranslucentTracing",
+                "Sticker-TFMSYellowMemo"
             ]
         }
     }
