@@ -105,10 +105,10 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         currentComposition = composition
     }
 
-    func addExistingBook(_ book: Book) {
+    func addExistingBook(_ book: Book, at position: CGPoint = CGPoint(x: 150, y: 200)) {
         guard let composition = currentComposition else { return }
 
-        let composedBook = ComposedBook(book: book, x: 150, y: 200, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
+        let composedBook = ComposedBook(book: book, x: position.x, y: position.y, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
         composition.items.append(composedBook)
         save()
         currentComposition = composition
@@ -156,22 +156,22 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         currentComposition = composition
     }
 
-    func addDecoration(imageName: String) {
+    func addDecoration(imageName: String, at position: CGPoint = CGPoint(x: 150, y: 200)) {
         guard let composition = currentComposition else { return }
 
-        let decoration = Decoration(imageName: imageName, x: 150, y: 200, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
+        let decoration = Decoration(imageName: imageName, x: position.x, y: position.y, rotation: Double.random(in: -8...8), scale: 1.0, zIndex: nextZIndex(in: composition))
         composition.decorations.append(decoration)
         save()
         currentComposition = composition
     }
 
-    func addStickyNote(text: String, color: StickyNoteColor) {
+    func addStickyNote(text: String, color: StickyNoteColor, at position: CGPoint = CGPoint(x: 150, y: 200)) {
         guard let composition = currentComposition else { return }
 
         let note = Decoration(
             imageName: Decoration.stickyNoteImageName,
-            x: 150,
-            y: 200,
+            x: position.x,
+            y: position.y,
             rotation: Double.random(in: -8...8),
             scale: 1.0,
             zIndex: nextZIndex(in: composition),

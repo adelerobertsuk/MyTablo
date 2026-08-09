@@ -19,7 +19,17 @@ struct StyleView: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem?
     @State private var editingPhotoDecoration: Decoration?
+    @State private var canvasSize: CGSize = CGSize(width: 402, height: 874)
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+
+    /// Center of the actual table canvas, with a little jitter so repeated
+    /// taps don't stack new items in an identical spot.
+    private var newItemPosition: CGPoint {
+        CGPoint(
+            x: canvasSize.width / 2 + Double.random(in: -30...30),
+            y: canvasSize.height / 2 + Double.random(in: -30...30)
+        )
+    }
 
     private let surfaceOptions: [(name: String, label: String)] = [
         ("Kate-table-AntiqueWood", "Antique Wood"),
@@ -45,6 +55,8 @@ struct StyleView: View {
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .scaleEffect(1.04, anchor: .bottom)
                         .clipped()
+                        .onAppear { canvasSize = geometry.size }
+                        .onChange(of: geometry.size) { _, newSize in canvasSize = newSize }
                 }
                 .ignoresSafeArea()
 
@@ -160,7 +172,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.calendarImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.calendarImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "calendar")
                                     .font(.subheadline)
@@ -171,7 +183,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.clockImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.clockImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "clock.fill")
                                     .font(.subheadline)
@@ -182,7 +194,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.locationImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.locationImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "mappin.circle.fill")
                                     .font(.subheadline)
@@ -193,7 +205,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "cloud.sun.fill")
                                     .font(.subheadline)
@@ -204,7 +216,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "divide.square.fill")
                                     .font(.subheadline)
@@ -215,7 +227,7 @@ struct StyleView: View {
                             }
 
                             Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.musicImageName)
+                                compositionViewModel.addDecoration(imageName: Decoration.musicImageName, at: newItemPosition)
                             }) {
                                 Image(systemName: "music.note")
                                     .font(.subheadline)
@@ -274,14 +286,14 @@ struct StyleView: View {
         .sheet(isPresented: $showLibraryPicker) {
             NavigationStack {
                 LibraryView(viewModel: libraryViewModel) { selectedBook in
-                    compositionViewModel.addExistingBook(selectedBook)
+                    compositionViewModel.addExistingBook(selectedBook, at: newItemPosition)
                     showLibraryPicker = false
                 }
             }
         }
         .sheet(isPresented: $showStickerPicker) {
             StickerPickerView { imageName in
-                compositionViewModel.addDecoration(imageName: imageName)
+                compositionViewModel.addDecoration(imageName: imageName, at: newItemPosition)
             }
         }
         .sheet(item: $stickyNoteEditorContext) { context in
@@ -294,7 +306,7 @@ struct StyleView: View {
                 }
             } else {
                 StickyNoteEditorView { text, color in
-                    compositionViewModel.addStickyNote(text: text, color: color)
+                    compositionViewModel.addStickyNote(text: text, color: color, at: newItemPosition)
                 }
             }
         }
