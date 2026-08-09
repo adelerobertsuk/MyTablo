@@ -157,6 +157,8 @@ struct TabloView: View {
                     }
                     Text("Library")
                         .font(.caption2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
             }
 
@@ -166,6 +168,8 @@ struct TabloView: View {
                         .font(.system(size: 22))
                     Text("Style")
                         .font(.caption2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
             }
 
@@ -180,6 +184,8 @@ struct TabloView: View {
                             .font(.system(size: 22))
                         Text("Share")
                             .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                 }
             }

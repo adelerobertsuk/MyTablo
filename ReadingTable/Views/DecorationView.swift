@@ -18,7 +18,18 @@ struct DecorationView: View {
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
 
-    private var visualSize: CGFloat { decoration.isStickyNote ? 110 : 70 }
+    /// Papers/Retro Paper stickers are paper-scrap textures meant to read as a backing sheet,
+    /// not an icon-sized sticker — they need a bigger frame than the other packs.
+    private var isPaperSticker: Bool {
+        StickerPack.papers.stickerNames.contains(decoration.imageName)
+            || StickerPack.retroPaper.stickerNames.contains(decoration.imageName)
+    }
+
+    private var visualSize: CGFloat {
+        if decoration.isStickyNote { return 110 }
+        if isPaperSticker { return 130 }
+        return 70
+    }
     private var touchTargetSize: CGFloat {
         if decoration.isStickyNote { return 120 }
         if decoration.isPhotoFrame { return 160 }
@@ -28,6 +39,7 @@ struct DecorationView: View {
         if decoration.isLocation { return 120 }
         if decoration.isCalculator { return 110 }
         if decoration.isMusic { return 116 }
+        if isPaperSticker { return 140 }
         return 88
     }
 
