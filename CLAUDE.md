@@ -49,7 +49,7 @@ Not a MyTablo feature — do not code here. Confirmed direction: **Gen Z, built 
 - Weather decoration: timeout/fetch bug fixed, needs a real-device retest.
 - iPad canvas positioning — **root-caused and fixed (2026-08-09):** every new book/decoration was placed at a hardcoded absolute point `(150, 200)` (`CoffeeTableCompositionViewModel.swift`), sized for an iPhone canvas — on iPad's much bigger table it landed disproportionately small/cornered. Now placed at the actual canvas center (with slight jitter so repeated adds don't stack) via `StyleView`'s tracked `canvasSize`. Verified in iPad Simulator; needs a real-device confirm.
 - Home screen widget — **verified working in iPad Simulator (2026-08-09)**, correctly showed a just-added test book by title/cover. The "loads no books" report may have been specific to real-device App Group/store-migration conditions (see `migrateExistingStoreIfNeeded` in `ReadingTableApp.swift`) — needs a real-device retest before closing out.
-- More sticker packs — check `~/Documents/Curio Design Assets/Stickers/` for a "paper" pack Kate mentioned.
+- ~~More sticker packs~~ — done (2026-08-09): added "Papers" and "Retro Paper" packs (23 stickers) to `StickerPack` in `DecorationView.swift`, verified in iPad Simulator.
 - Apply once received from GG: Apple privacy manifest, Privacy Policy/Support copy, accessibility-label/tap-target fixes.
 - Decide iPad's place in v1.0 `TARGETED_DEVICE_FAMILY`.
 - White Rabbits: clarify web-vs-iOS with Adele, then inspect the existing Gemini prototype before scoping the MVP.
