@@ -39,10 +39,12 @@ struct ReadingTableApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabloView(
-                libraryViewModel: libraryViewModel,
-                compositionViewModel: compositionViewModel
-            )
+            PaletteProvider {
+                TabloView(
+                    libraryViewModel: libraryViewModel,
+                    compositionViewModel: compositionViewModel
+                )
+            }
         }
         .modelContainer(container)
     }

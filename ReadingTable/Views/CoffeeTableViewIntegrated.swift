@@ -11,6 +11,7 @@ struct StyleView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
     @ObservedObject var compositionViewModel: CoffeeTableCompositionViewModel
     var onDismiss: () -> Void = {}
+    @Environment(\.palette) private var palette
 
     @State private var showLibraryPicker = false
     @State private var showStickerPicker = false
@@ -39,11 +40,6 @@ struct StyleView: View {
         ("Kate-table-Marble", "Marble"),
         ("Kate-table-WhitePlaster", "White Plaster")
     ]
-
-    private var currentSurfaceLabel: String {
-        let name = compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster"
-        return surfaceOptions.first(where: { $0.name == name })?.label ?? "Table"
-    }
 
     var body: some View {
         NavigationStack {
@@ -124,156 +120,13 @@ struct StyleView: View {
                     }
 
                     VStack {
-                        HStack(spacing: 12) {
-                            Button(action: { showLibraryPicker = true }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("Add Book")
-                                        .fontWeight(.medium)
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                .cornerRadius(8)
-                            }
-
-                            Button(action: { showStickerPicker = true }) {
-                                Image(systemName: "leaf.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                stickyNoteEditorContext = StickyNoteEditorContext(decoration: nil)
-                            }) {
-                                Image(systemName: "note.text")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                editingPhotoDecoration = nil
-                                showPhotoPicker = true
-                            }) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.calendarImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "calendar")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.clockImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "clock.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.locationImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "mappin.circle.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.weatherImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "cloud.sun.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.calculatorImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "divide.square.fill")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: {
-                                compositionViewModel.addDecoration(imageName: Decoration.musicImageName, at: newItemPosition)
-                            }) {
-                                Image(systemName: "music.note")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                    .clipShape(Circle())
-                            }
-
-                            Button(action: { snapToGridEnabled.toggle() }) {
-                                Image(systemName: "square.grid.2x2")
-                                    .font(.subheadline)
-                                    .foregroundColor(snapToGridEnabled ? .white : .primary)
-                                    .padding(10)
-                                    .background(snapToGridEnabled ? Color(red: 0.1, green: 0.1, blue: 0.12) : Color(.systemGray6))
-                                    .clipShape(Circle())
-                            }
-
-                            Spacer()
-
-                            Menu {
-                                ForEach(surfaceOptions, id: \.name) { option in
-                                    Button(option.label) {
-                                        compositionViewModel.setSurface(option.name)
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Text(currentSurfaceLabel)
-                                    Image(systemName: "chevron.down")
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .cornerRadius(8)
-                            }
-                        }
-                        .padding()
-
                         Spacer()
+                        styleTray
                     }
+                    .padding(.bottom, 12)
                 }
             }
-            .navigationTitle("Style")
+            .navigationTitle("Arrange")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -284,11 +137,9 @@ struct StyleView: View {
             }
         }
         .sheet(isPresented: $showLibraryPicker) {
-            NavigationStack {
-                LibraryView(viewModel: libraryViewModel) { selectedBook in
-                    compositionViewModel.addExistingBook(selectedBook, at: newItemPosition)
-                    showLibraryPicker = false
-                }
+            LibraryView(viewModel: libraryViewModel) { selectedBook in
+                compositionViewModel.addExistingBook(selectedBook, at: newItemPosition)
+                showLibraryPicker = false
             }
         }
         .sheet(isPresented: $showStickerPicker) {
@@ -327,14 +178,14 @@ struct StyleView: View {
                         if let editingPhotoDecoration {
                             compositionViewModel.updatePhotoDecorationImage(editingPhotoDecoration, imageData: jpegData)
                         } else {
-                            compositionViewModel.addPhotoDecoration(imageData: jpegData)
+                            compositionViewModel.addPhotoDecoration(imageData: jpegData, at: newItemPosition)
                         }
                         editingPhotoDecoration = nil
                         photoPickerItem = nil
                     }
                 } catch {
                     await MainActor.run {
-                        compositionViewModel.errorMessage = "Couldn't load that photo — try picking a different one."
+                        compositionViewModel.errorMessage = "Couldn't load that photo. Try picking a different one."
                         editingPhotoDecoration = nil
                         photoPickerItem = nil
                     }
@@ -349,6 +200,95 @@ struct StyleView: View {
         } message: {
             Text(compositionViewModel.errorMessage ?? "")
         }
+    }
+
+    private var styleTray: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 8) {
+                ForEach(surfaceOptions, id: \.name) { option in
+                    let selected = (compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster") == option.name
+                    Button {
+                        Haptics.select()
+                        compositionViewModel.setSurface(option.name)
+                    } label: {
+                        Image(option.name)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(selected ? palette.accent : palette.line, lineWidth: selected ? 2 : 1)
+                            )
+                            .shadow(color: .black.opacity(selected ? 0.18 : 0.08), radius: selected ? 6 : 3, y: 2)
+                    }
+                    .accessibilityLabel(option.label)
+                }
+            }
+
+            HStack(spacing: 0) {
+                trayButton(symbol: "book.closed.fill", title: "Book") {
+                    showLibraryPicker = true
+                }
+                trayButton(symbol: "leaf.fill", title: "Stickers") {
+                    showStickerPicker = true
+                }
+                trayButton(symbol: "note.text", title: "Note") {
+                    stickyNoteEditorContext = StickyNoteEditorContext(decoration: nil)
+                }
+                trayButton(symbol: "photo", title: "Polaroid") {
+                    editingPhotoDecoration = nil
+                    showPhotoPicker = true
+                }
+                trayButton(symbol: "calendar", title: "Calendar") {
+                    compositionViewModel.addDecoration(imageName: Decoration.calendarImageName, at: newItemPosition)
+                }
+                Button {
+                    Haptics.select()
+                    snapToGridEnabled.toggle()
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Grid")
+                            .font(.system(size: 10, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(snapToGridEnabled ? palette.accent : palette.ink)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .accessibilityLabel(snapToGridEnabled ? "Snap to grid on" : "Snap to grid off")
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 18)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(palette.line, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.14), radius: 20, y: 8)
+        .padding(.horizontal, 16)
+    }
+
+    private func trayButton(symbol: String, title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            VStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .medium))
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(palette.ink)
+            .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .accessibilityLabel(title)
     }
 }
 

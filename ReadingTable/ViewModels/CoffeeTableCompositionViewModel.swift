@@ -204,13 +204,13 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         }
     }
 
-    func addPhotoDecoration(imageData: Data) {
+    func addPhotoDecoration(imageData: Data, at position: CGPoint = CGPoint(x: 150, y: 200)) {
         guard let composition = currentComposition else { return }
 
         let photo = Decoration(
             imageName: Decoration.photoFrameImageName,
-            x: 150,
-            y: 200,
+            x: position.x,
+            y: position.y,
             rotation: Double.random(in: -8...8),
             scale: 1.0,
             zIndex: nextZIndex(in: composition),

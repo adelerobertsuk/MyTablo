@@ -1,6 +1,6 @@
 # ReadingTable (MyTablo)
 
-iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled with your books. **Consumer-facing name: MyTablo.** GitHub repo, Xcode project, and both targets are `MyTablo`; bundle ID stays `com.adeleroberts.Tablo` deliberately until right before App Store submission (avoids re-doing the WeatherKit entitlement/duplicate-install dance). Use "MyTablo" in any new user-facing text.
+iOS app (SwiftUI + SwiftData) that lets you build a virtual coffee table styled with your books. **Official name: MyTablo.** In conversation, Tablo is fine. GitHub repo, Xcode project, and both targets stay `MyTablo`; bundle ID stays `com.adeleroberts.Tablo` until right before App Store submission. Use "MyTablo" in any new user-facing text that names the app.
 
 Full historical logs, resolved bugs, and superseded feature write-ups live in [`CLAUDE_HISTORY.md`](CLAUDE_HISTORY.md) — not loaded by default, read only when explicitly reviewing past context.
 

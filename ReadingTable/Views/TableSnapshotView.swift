@@ -26,13 +26,13 @@ struct TableSnapshotView: View {
         .frame(width: size.width, height: size.height)
         .clipped()
         .overlay(alignment: .bottom) {
-            Text("Made on MyTablo")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+            Text("MyTablo")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(0.92))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.black.opacity(0.35), in: Capsule())
-                .padding(.bottom, 14)
+                .background(.black.opacity(0.32), in: Capsule())
+                .padding(.bottom, 16)
         }
     }
 }

@@ -15,6 +15,7 @@ private struct ShareableTableSnapshot: Transferable {
 struct TabloView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
     @ObservedObject var compositionViewModel: CoffeeTableCompositionViewModel
+    @Environment(\.palette) private var palette
 
     @State private var controlsRevealed = false
     @State private var showLibrary = false
@@ -51,6 +52,8 @@ struct TabloView: View {
 
             Color.clear
                 .contentShape(Rectangle())
+                .accessibilityLabel("Your table")
+                .accessibilityHint("Tap the bottom of the screen for Library, Arrange, and Share.")
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         controlsRevealed = false
@@ -60,17 +63,30 @@ struct TabloView: View {
             VStack {
                 Spacer()
 
+                if tableIsEmpty && controlsRevealed {
+                    Text("This table is yours. Add a book to begin.")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(.black.opacity(0.38), in: Capsule())
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 10)
+                        .transition(.opacity)
+                }
+
                 ZStack {
                     if controlsRevealed {
                         VStack(spacing: 8) {
                             if let notice = sharingPrivacyNotice {
                                 Text(notice)
-                                    .font(.caption2)
-                                    .foregroundColor(.white)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.white)
                                     .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.black.opacity(0.35), in: Capsule())
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(.black.opacity(0.42), in: Capsule())
                                     .padding(.horizontal, 24)
                             }
                             revealedControlBar
@@ -81,8 +97,11 @@ struct TabloView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .frame(height: 110)
+                            .accessibilityLabel("Show table controls")
+                            .accessibilityAddTraits(.isButton)
                             .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                Haptics.tap()
+                                withAnimation(.easeInOut(duration: 0.22)) {
                                     controlsRevealed = true
                                 }
                                 refreshShareImage()
@@ -94,7 +113,7 @@ struct TabloView: View {
         }
         .fullScreenCover(isPresented: $showLibrary, onDismiss: refreshShareImage) {
             LibraryView(viewModel: libraryViewModel, onDismiss: { showLibrary = false }) { selectedBook in
-                compositionViewModel.addExistingBook(selectedBook)
+                compositionViewModel.addExistingBook(selectedBook, at: newItemPosition)
             }
         }
         .fullScreenCover(isPresented: $showStyle, onDismiss: refreshShareImage) {
@@ -104,7 +123,24 @@ struct TabloView: View {
                 onDismiss: { showStyle = false }
             )
         }
-        .onAppear(perform: refreshShareImage)
+        .onAppear {
+            if tableIsEmpty {
+                controlsRevealed = true
+            }
+            refreshShareImage()
+        }
+    }
+
+    private var tableIsEmpty: Bool {
+        let composition = compositionViewModel.currentComposition
+        return (composition?.items.isEmpty ?? true) && (composition?.decorations.isEmpty ?? true)
+    }
+
+    private var newItemPosition: CGPoint {
+        CGPoint(
+            x: tableSize.width / 2 + Double.random(in: -30...30),
+            y: tableSize.height / 2 + Double.random(in: -30...30)
+        )
     }
 
     private var hasPhotoDecorations: Bool {
@@ -142,58 +178,74 @@ struct TabloView: View {
     }
 
     private var revealedControlBar: some View {
-        HStack(spacing: 32) {
-            Button(action: { showLibrary = true }) {
-                VStack(spacing: 4) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "books.vertical.fill")
-                            .font(.system(size: 22))
+        HStack(spacing: 28) {
+            Button {
+                Haptics.tap()
+                showLibrary = true
+            } label: {
+                controlItem(symbol: "books.vertical.fill", title: "Library") {
+                    if !libraryViewModel.books.isEmpty {
                         Text("\(libraryViewModel.books.count)")
-                            .font(.system(size: 10, weight: .bold))
-                            .padding(4)
-                            .background(Circle().fill(Color.accentColor))
-                            .foregroundColor(.white)
-                            .offset(x: 12, y: -8)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(palette.accent, in: Capsule())
+                            .offset(x: 10, y: -8)
                     }
-                    Text("Library")
-                        .font(.caption2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
                 }
             }
+            .accessibilityLabel("Library")
+            .frame(minHeight: 44)
 
-            Button(action: { showStyle = true }) {
-                VStack(spacing: 4) {
-                    Image(systemName: "paintpalette.fill")
-                        .font(.system(size: 22))
-                    Text("Style")
-                        .font(.caption2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+            Button {
+                Haptics.tap()
+                showStyle = true
+            } label: {
+                controlItem(symbol: "square.and.pencil", title: "Arrange") {
+                    EmptyView()
                 }
             }
+            .accessibilityLabel("Arrange")
+            .frame(minHeight: 44)
 
             if let shareImage, let sharePNGData {
                 ShareLink(
                     item: ShareableTableSnapshot(pngData: sharePNGData),
-                    message: Text("Here's what's on MyTablo right now 📚✨"),
-                    preview: SharePreview("", image: Image(uiImage: shareImage))
+                    message: Text("Here's my table."),
+                    preview: SharePreview("MyTablo", image: Image(uiImage: shareImage))
                 ) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 22))
-                        Text("Share")
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
+                    controlItem(symbol: "square.and.arrow.up", title: "Share") {
+                        EmptyView()
                     }
                 }
             }
         }
-        .foregroundColor(.primary)
-        .padding(.horizontal, 28)
-        .padding(.vertical, 14)
+        .foregroundStyle(palette.ink)
+        .padding(.horizontal, 30)
+        .padding(.vertical, 16)
         .background(.ultraThinMaterial, in: Capsule())
-        .padding(.bottom, 24)
+        .overlay(Capsule().stroke(palette.line, lineWidth: 1))
+        .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
+        .padding(.bottom, 28)
+    }
+
+    private func controlItem<Badge: View>(
+        symbol: String,
+        title: String,
+        @ViewBuilder badge: () -> Badge
+    ) -> some View {
+        VStack(spacing: 5) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: symbol)
+                    .font(.system(size: 20, weight: .medium))
+                badge()
+            }
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(minWidth: 56, minHeight: 44)
     }
 }

@@ -5,6 +5,7 @@ struct LibraryView: View {
     @ObservedObject var viewModel: LibraryViewModel
     var onDismiss: (() -> Void)? = nil
     var onSelect: (Book) -> Void
+    @Environment(\.palette) private var palette
 
     @State private var showAddBook = false
     @State private var editingBook: Book? = nil
@@ -13,51 +14,54 @@ struct LibraryView: View {
         NavigationStack {
             Group {
                 if viewModel.books.isEmpty {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 14) {
                         Image(systemName: "books.vertical")
-                            .font(.system(size: 40))
-                            .foregroundColor(.gray.opacity(0.3))
-                        Text("Library is empty")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        Text("Add a book using an ISBN to get started")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                            .font(.system(size: 36, weight: .light))
+                            .foregroundStyle(palette.faint)
+                        Text("Nothing on the shelf yet")
+                            .displayTitleStyle()
+                            .multilineTextAlignment(.center)
+                        Text("Add a book by ISBN, scan the barcode, or type the title.")
+                            .captionStyle()
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        Button {
+                            Haptics.tap()
+                            showAddBook = true
+                        } label: {
+                            Text("Add a book")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                                .background(palette.ink, in: Capsule())
+                        }
+                        .padding(.top, 8)
                     }
-                    .frame(maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 16)], spacing: 16) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 18)], spacing: 20) {
                             ForEach(viewModel.books) { book in
-                                VStack(spacing: 8) {
-                                    BookTileView(book: book, onEdit: {
-                                        editingBook = book
-                                    }, onDelete: {
-                                        withAnimation {
-                                            viewModel.deleteBook(book)
-                                        }
-                                    }, onToggleCurrentlyReading: {
-                                        viewModel.setCurrentlyReading(book, isCurrentlyReading: !book.isCurrentlyReading)
-                                    })
-
-                                    Button(action: { onSelect(book) }) {
-                                        HStack {
-                                            Image(systemName: "plus.circle.fill")
-                                            Text("Add").font(.caption).fontWeight(.medium)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(8)
-                                        .background(Color(red: 0.1, green: 0.1, blue: 0.12))
-                                        .foregroundColor(.white)
-                                        .cornerRadius(6)
+                                BookTileView(book: book, onPlace: {
+                                    Haptics.tap()
+                                    onSelect(book)
+                                }, onEdit: {
+                                    editingBook = book
+                                }, onDelete: {
+                                    withAnimation {
+                                        viewModel.deleteBook(book)
                                     }
-                                }
+                                }, onToggleCurrentlyReading: {
+                                    viewModel.setCurrentlyReading(book, isCurrentlyReading: !book.isCurrentlyReading)
+                                })
                             }
                         }
-                        .padding(16)
+                        .padding(20)
                     }
                 }
             }
+            .background(SanctuaryBackground())
             .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -69,7 +73,10 @@ struct LibraryView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAddBook = true }) {
+                    Button {
+                        Haptics.tap()
+                        showAddBook = true
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
@@ -155,6 +162,8 @@ struct AddBookView: View {
             }
             .navigationTitle("Add Book")
             .navigationBarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .background(SanctuaryBackground())
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -239,6 +248,8 @@ struct EditBookView: View {
             }
             .navigationTitle("Edit Book")
             .navigationBarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .background(SanctuaryBackground())
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -257,82 +268,98 @@ struct EditBookView: View {
 
 struct BookTileView: View {
     let book: Book
+    var onPlace: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var onToggleCurrentlyReading: (() -> Void)? = nil
+    @Environment(\.palette) private var palette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ZStack(alignment: .topTrailing) {
-                Color.clear
-                    .aspectRatio(120.0 / 170.0, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .overlay {
-                        if let imageData = book.coverImageData, let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.gray, Color.black]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+        VStack(alignment: .leading, spacing: 8) {
+            Color.clear
+                .aspectRatio(120.0 / 170.0, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    if let imageData = book.coverImageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            colors: [palette.muted, palette.ink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .overlay {
+                            Text(book.title)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .padding(10)
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(alignment: .leading) {
                     LinearGradient(colors: [.black.opacity(0.22), .clear], startPoint: .leading, endPoint: .trailing)
                         .frame(width: 6)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(palette.line, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.18), radius: 6, x: 2, y: 4)
+                .shadow(color: .black.opacity(0.16), radius: 8, x: 2, y: 5)
                 .onTapGesture {
-                    onEdit?()
+                    onPlace?()
                 }
-
-                if let onDelete {
-                    Button(action: onDelete) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .background(Circle().fill(Color.black.opacity(0.5)).frame(width: 18, height: 18))
+                .contextMenu {
+                    if let onPlace {
+                        Button("Place on table", systemImage: "plus") { onPlace() }
                     }
-                    .padding(6)
+                    if let onToggleCurrentlyReading {
+                        Button(
+                            book.isCurrentlyReading ? "Not currently reading" : "Currently reading",
+                            systemImage: book.isCurrentlyReading ? "bookmark.slash" : "bookmark"
+                        ) { onToggleCurrentlyReading() }
+                    }
+                    if let onEdit {
+                        Button("Edit", systemImage: "pencil") { onEdit() }
+                    }
+                    if let onDelete {
+                        Button("Delete", systemImage: "trash", role: .destructive) { onDelete() }
+                    }
                 }
-
-                if let onToggleCurrentlyReading {
-                    Button(action: onToggleCurrentlyReading) {
-                        Image(systemName: book.isCurrentlyReading ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.white)
+                .overlay(alignment: .topLeading) {
+                    if book.isCurrentlyReading {
+                        Image(systemName: "bookmark.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(7)
+                            .background(palette.accent, in: Circle())
                             .padding(6)
-                            .background(Circle().fill(book.isCurrentlyReading ? Color.accentColor : Color.black.opacity(0.45)))
+                            .accessibilityLabel("Currently reading")
                     }
-                    .padding(6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .accessibilityLabel(book.isCurrentlyReading ? "Currently reading" : "Mark as currently reading")
                 }
-            }
 
-            Text(book.title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(1)
-            Text(book.author)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(book.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(1)
+                Text(book.author)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(palette.muted)
+                    .lineLimit(1)
+            }
         }
+        .accessibilityHint("Tap to place on the table. Touch and hold for more.")
     }
 }
 
 struct CustomCoverPicker: View {
     @Binding var coverImageData: Data?
+    @Environment(\.palette) private var palette
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var showScanner = false
     @State private var showCamera = false
@@ -349,12 +376,12 @@ struct CustomCoverPicker: View {
                         .resizable()
                         .scaledToFill()
                 } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(red: 0.15, green: 0.15, blue: 0.18))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(palette.track)
                         .overlay(
                             Image(systemName: "photo.badge.plus")
                                 .font(.system(size: 24))
-                                .foregroundColor(.gray)
+                                .foregroundStyle(palette.faint)
                         )
                 }
             }
@@ -392,13 +419,11 @@ struct CustomCoverPicker: View {
                     Image(systemName: "plus")
                     Text("Add Cover")
                 }
-                .font(.caption)
-                .fontWeight(.medium)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(6)
+                .font(.system(size: 13, weight: .medium))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(palette.ink, in: Capsule())
+                .foregroundStyle(.white)
             }
 
             if let loadError {
@@ -443,7 +468,7 @@ struct CustomCoverPicker: View {
                     }
                 } catch {
                     await MainActor.run {
-                        loadError = "Couldn't load that photo — try picking a different one."
+                        loadError = "Couldn't load that photo. Try picking a different one."
                         selectedItem = nil
                     }
                 }

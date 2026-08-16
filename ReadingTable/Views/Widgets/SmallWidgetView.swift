@@ -19,31 +19,31 @@ struct CurrentReadPreview {
 /// with the title/author legible over a bottom gradient scrim.
 struct SmallWidgetView: View {
     let book: CurrentReadPreview
+    private let palette = Palette.light
 
     var body: some View {
         ZStack(alignment: .bottom) {
             backgroundLayer
 
             LinearGradient(
-                colors: [.clear, .black.opacity(0.8)],
+                colors: [.clear, .black.opacity(0.72)],
                 startPoint: .center,
                 endPoint: .bottom
             )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(book.title)
-                    .font(.system(.caption, weight: .bold))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white)
                     .lineLimit(2)
                 Text(book.author)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.82))
                     .lineLimit(1)
             }
-            .padding(10)
+            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     @ViewBuilder
@@ -54,17 +54,16 @@ struct SmallWidgetView: View {
                 .scaledToFill()
         } else {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.35, green: 0.25, blue: 0.2),
-                        Color(red: 0.15, green: 0.1, blue: 0.08)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
+                palette.ink
+                EllipticalGradient(
+                    gradient: Gradient(colors: [palette.accentGlow, Color.clear]),
+                    center: .center,
+                    startRadiusFraction: 0,
+                    endRadiusFraction: 0.7
                 )
                 Image(systemName: "book.closed.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(.white.opacity(0.3))
+                    .font(.system(size: 34, weight: .light))
+                    .foregroundStyle(.white.opacity(0.28))
             }
         }
     }

@@ -81,10 +81,12 @@ struct ReadingTableWidgets: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             ReadingTableWidgetsEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) {
+                    Color.clear
+                }
         }
-        .configurationDisplayName("Current Read")
-        .description("Shows the book you're currently reading.")
+        .configurationDisplayName("Current read")
+        .description("The book on your table.")
         .supportedFamilies([.systemSmall])
     }
 }

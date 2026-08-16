@@ -25,9 +25,14 @@ struct DecorationView: View {
             || StickerPack.retroPaper.stickerNames.contains(decoration.imageName)
     }
 
+    private var isTableFavourite: Bool {
+        StickerPack.tableFavourites.stickerNames.contains(decoration.imageName)
+    }
+
     private var visualSize: CGFloat {
         if decoration.isStickyNote { return 110 }
         if isPaperSticker { return 130 }
+        if isTableFavourite { return 104 }
         return 70
     }
     private var touchTargetSize: CGFloat {
@@ -40,6 +45,7 @@ struct DecorationView: View {
         if decoration.isCalculator { return 110 }
         if decoration.isMusic { return 116 }
         if isPaperSticker { return 140 }
+        if isTableFavourite { return 116 }
         return 88
     }
 
@@ -1094,11 +1100,12 @@ private struct BigVinylDisc: View {
 }
 
 enum StickerPack: String, CaseIterable, Identifiable {
-    case deskPlants = "Desk Plants"
-    case coffeeHouse = "Coffee House"
-    case fallDesk = "Fall Desk"
+    case deskPlants = "Plants"
+    case coffeeHouse = "Coffee"
+    case fallDesk = "Autumn"
     case papers = "Papers"
     case retroPaper = "Retro Paper"
+    case tableFavourites = "Favourites"
 
     var id: String { rawValue }
 
@@ -1191,6 +1198,29 @@ enum StickerPack: String, CaseIterable, Identifiable {
                 "Sticker-TFMSTranslucentTracing",
                 "Sticker-TFMSYellowMemo"
             ]
+        case .tableFavourites:
+            return [
+                "Sticker-BTF-DinnerPlate",
+                "Sticker-BTF-Fork",
+                "Sticker-BTF-Knife",
+                "Sticker-BTF-Spoon",
+                "Sticker-BTF-Napkin",
+                "Sticker-BTF-TeaAndSaucer",
+                "Sticker-BTF-FullEnglish",
+                "Sticker-BTF-FishAndChips",
+                "Sticker-BTF-SundayRoast",
+                "Sticker-BTF-SausageRoll",
+                "Sticker-BTF-Pasty",
+                "Sticker-BTF-BeansOnToast",
+                "Sticker-BTF-Crumpets",
+                "Sticker-BTF-Scone",
+                "Sticker-BTF-VictoriaSponge",
+                "Sticker-BTF-JamDoughnut",
+                "Sticker-BTF-TeaBiscuits",
+                "Sticker-BTF-JacketPotato",
+                "Sticker-BTF-BaconSandwich",
+                "Sticker-BTF-CurryAndRice"
+            ]
         }
     }
 }
@@ -1203,6 +1233,7 @@ struct StickyNoteEditorView: View {
     @State private var text: String
     @State private var selectedColor: StickyNoteColor
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.palette) private var palette
 
     init(existingText: String = "", existingColor: StickyNoteColor = .yellow, onSave: @escaping (String, StickyNoteColor) -> Void) {
         self.existingText = existingText
@@ -1214,37 +1245,49 @@ struct StickyNoteEditorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Note") {
-                    TextEditor(text: $text)
-                        .frame(minHeight: 120)
-                }
+            VStack(spacing: 24) {
+                TextEditor(text: $text)
+                    .font(.system(size: 17, weight: .medium))
+                    .scrollContentBackground(.hidden)
+                    .padding(18)
+                    .frame(minHeight: 180)
+                    .background(selectedColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
 
-                Section("Color") {
-                    HStack(spacing: 16) {
-                        ForEach(StickyNoteColor.allCases) { color in
-                            Button(action: { selectedColor = color }) {
-                                Circle()
-                                    .fill(color.color)
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.accentColor, lineWidth: selectedColor == color ? 3 : 0)
-                                    )
-                            }
-                            .buttonStyle(.plain)
+                HStack(spacing: 16) {
+                    ForEach(StickyNoteColor.allCases) { color in
+                        Button {
+                            Haptics.select()
+                            selectedColor = color
+                        } label: {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Circle()
+                                        .stroke(palette.ink, lineWidth: selectedColor == color ? 2 : 0)
+                                )
+                                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(color.rawValue)
                     }
                 }
+
+                Spacer()
             }
-            .navigationTitle(existingText.isEmpty ? "New Sticky Note" : "Edit Sticky Note")
+            .background(SanctuaryBackground())
+            .navigationTitle(existingText.isEmpty ? "Note" : "Edit note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button("Place") {
+                        Haptics.success()
                         onSave(text.trimmingCharacters(in: .whitespacesAndNewlines), selectedColor)
                         dismiss()
                     }
@@ -1260,6 +1303,7 @@ struct StickerPickerView: View {
 
     @State private var selectedPack: StickerPack = .deskPlants
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.palette) private var palette
 
     var body: some View {
         NavigationStack {
@@ -1267,15 +1311,16 @@ struct StickerPickerView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(StickerPack.allCases) { pack in
-                            Button(action: { selectedPack = pack }) {
+                            Button {
+                                Haptics.select()
+                                selectedPack = pack
+                            } label: {
                                 Text(pack.rawValue)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                                    .font(.system(size: 13, weight: .medium))
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(selectedPack == pack ? Color(red: 0.1, green: 0.1, blue: 0.12) : Color(.systemGray6))
-                                    .foregroundColor(selectedPack == pack ? .white : .primary)
-                                    .clipShape(Capsule())
+                                    .background(selectedPack == pack ? palette.ink : palette.track, in: Capsule())
+                                    .foregroundStyle(selectedPack == pack ? palette.bg : palette.ink)
                             }
                         }
                     }
@@ -1284,25 +1329,30 @@ struct StickerPickerView: View {
                 }
 
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 16)], spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 14)], spacing: 14) {
                         ForEach(selectedPack.stickerNames, id: \.self) { name in
-                            Button(action: {
+                            Button {
+                                Haptics.tap()
                                 onPick(name)
                                 dismiss()
-                            }) {
+                            } label: {
                                 Image(name)
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 80, height: 80)
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .frame(width: 84, height: 84)
+                                    .padding(10)
+                                    .background(palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(palette.line, lineWidth: 1)
+                                    )
                             }
                         }
                     }
                     .padding(16)
                 }
             }
+            .background(SanctuaryBackground())
             .navigationTitle("Stickers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

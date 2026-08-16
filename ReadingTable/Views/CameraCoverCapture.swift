@@ -312,7 +312,7 @@ struct BackgroundRemovalReviewScreen: View {
         do {
             processedImage = try await removeBackground(from: baseImage)
         } catch {
-            errorMessage = "Couldn't find a clear subject to cut out — you can still use the original photo."
+            errorMessage = "Couldn't find a clear subject to cut out. You can still use the original photo."
         }
         isProcessing = false
     }

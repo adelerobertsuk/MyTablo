@@ -57,6 +57,7 @@
 			membershipExceptions = (
 				Models/Book.swift,
 				Models/Decoration.swift,
+				Theme/Palette.swift,
 				Views/Widgets/SmallWidgetView.swift,
 			);
 			target = 7FE088ED30269E8E0005C7E7 /* MyTabloWidgetsExtension */;
@@ -402,9 +403,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Used to show today's calendar events on the Calendar table decoration.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show local weather and your current location on table decorations.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "MyTablo shows today's events on the calendar you place on your table.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "MyTablo uses the camera to scan a barcode or photograph a book cover.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MyTablo uses your location for weather on the table, if you add it.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MyTablo uses your photos for Polaroids and custom book covers.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -439,9 +441,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Used to show today's calendar events on the Calendar table decoration.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan book barcodes and take photos of book covers.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show local weather and your current location on table decorations.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "MyTablo shows today's events on the calendar you place on your table.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "MyTablo uses the camera to scan a barcode or photograph a book cover.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MyTablo uses your location for weather on the table, if you add it.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MyTablo uses your photos for Polaroids and custom book covers.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -475,7 +478,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "MyTablo Widgets";
+				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -506,7 +509,7 @@
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "MyTablo Widgets";
+				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
