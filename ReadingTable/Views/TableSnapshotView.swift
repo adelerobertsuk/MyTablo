@@ -6,12 +6,7 @@ struct TableSnapshotView: View {
 
     var body: some View {
         ZStack {
-            Image(composition.surfaceImageName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: size.width, height: size.height)
-                .scaleEffect(1.04, anchor: .bottom)
-                .clipped()
+            TableSurfaceView(imageName: composition.surfaceImageName, size: size)
 
             ForEach(composition.items.sorted(by: { $0.zIndex < $1.zIndex })) { composedBook in
                 TableBookView(composedBook: composedBook, isInteractive: false)

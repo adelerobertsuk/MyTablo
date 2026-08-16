@@ -27,14 +27,12 @@ struct TabloView: View {
     var body: some View {
         ZStack {
             GeometryReader { geometry in
-                Image(compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .scaleEffect(1.04, anchor: .bottom)
-                    .clipped()
-                    .onAppear { tableSize = geometry.size }
-                    .onChange(of: geometry.size) { _, newSize in tableSize = newSize }
+                TableSurfaceView(
+                    imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster",
+                    size: geometry.size
+                )
+                .onAppear { tableSize = geometry.size }
+                .onChange(of: geometry.size) { _, newSize in tableSize = newSize }
             }
             .ignoresSafeArea()
 
@@ -213,7 +211,11 @@ struct TabloView: View {
                 ShareLink(
                     item: ShareableTableSnapshot(pngData: sharePNGData),
                     message: Text("Here's my table."),
-                    preview: SharePreview("MyTablo", image: Image(uiImage: shareImage))
+                    preview: SharePreview(
+                        "MyTablo",
+                        image: Image(uiImage: shareImage),
+                        icon: Image(uiImage: UIImage(named: "MyTabloIcon") ?? shareImage)
+                    )
                 ) {
                     controlItem(symbol: "square.and.arrow.up", title: "Share") {
                         EmptyView()

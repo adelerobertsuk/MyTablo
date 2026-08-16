@@ -33,26 +33,22 @@ struct StyleView: View {
     }
 
     private let surfaceOptions: [(name: String, label: String)] = [
-        ("Kate-table-AntiqueWood", "Antique Wood"),
+        ("Kate-table-WhitePlaster", "Plaster"),
         ("Kate-table-Wood", "Wood"),
-        ("Kate-table-BedLinen", "Bed Linen"),
-        ("Kate-table-Concrete", "Concrete"),
         ("Kate-table-Marble", "Marble"),
-        ("Kate-table-WhitePlaster", "White Plaster")
+        ("Kate-table-Concrete", "Concrete")
     ]
 
     var body: some View {
         NavigationStack {
             ZStack {
                 GeometryReader { geometry in
-                    Image(compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .scaleEffect(1.04, anchor: .bottom)
-                        .clipped()
-                        .onAppear { canvasSize = geometry.size }
-                        .onChange(of: geometry.size) { _, newSize in canvasSize = newSize }
+                    TableSurfaceView(
+                        imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster",
+                        size: geometry.size
+                    )
+                    .onAppear { canvasSize = geometry.size }
+                    .onChange(of: geometry.size) { _, newSize in canvasSize = newSize }
                 }
                 .ignoresSafeArea()
 
@@ -214,7 +210,9 @@ struct StyleView: View {
                         Image(option.name)
                             .resizable()
                             .scaledToFill()
+                            .scaleEffect(1.02, anchor: .center)
                             .frame(width: 44, height: 44)
+                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
