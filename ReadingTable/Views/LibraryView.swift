@@ -1,10 +1,12 @@
 import SwiftUI
 import PhotosUI
+import ImageIO
 
 struct LibraryView: View {
     @ObservedObject var viewModel: LibraryViewModel
     var onDismiss: (() -> Void)? = nil
     var onSelect: (Book) -> Void
+    var placesOnTap: Bool = false
     @Environment(\.palette) private var palette
 
     @State private var showAddBook = false
@@ -21,7 +23,7 @@ struct LibraryView: View {
                         Text("Nothing on the shelf yet")
                             .displayTitleStyle()
                             .multilineTextAlignment(.center)
-                        Text("Add a book by ISBN, scan the barcode, or type the title.")
+                        Text("Scan the barcode on the back of a book.")
                             .captionStyle()
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -41,12 +43,12 @@ struct LibraryView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 18)], spacing: 20) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 18, alignment: .top)], spacing: 20) {
                             ForEach(viewModel.books) { book in
                                 BookTileView(book: book, onPlace: {
                                     Haptics.tap()
                                     onSelect(book)
-                                }, onEdit: {
+                                }, placesOnTap: placesOnTap, onEdit: {
                                     editingBook = book
                                 }, onDelete: {
                                     withAnimation {
@@ -81,146 +83,37 @@ struct LibraryView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAddBook, onDismiss: { viewModel.isbnInput = "" }) {
+            .fullScreenCover(isPresented: $showAddBook) {
                 AddBookView(viewModel: viewModel)
+                    .onDisappear {
+                        viewModel.isbnInput = ""
+                        viewModel.errorMessage = nil
+                    }
             }
-            .sheet(item: $editingBook) { book in
+            .fullScreenCover(item: $editingBook) { book in
                 EditBookView(viewModel: viewModel, book: book)
             }
         }
     }
 }
 
-private enum AddBookMode: String, CaseIterable {
-    case isbn = "By ISBN"
-    case manual = "Manual"
-}
-
-struct AddBookView: View {
-    @ObservedObject var viewModel: LibraryViewModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var customCoverData: Data? = nil
-    @State private var showBarcodeScanner = false
-    @State private var mode: AddBookMode = .isbn
-    @State private var manualTitle: String = ""
-    @State private var manualAuthor: String = ""
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Picker("Add Method", selection: $mode) {
-                    ForEach(AddBookMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets())
-                .padding(.vertical, 4)
-
-                if mode == .isbn {
-                    Section("ISBN") {
-                        TextField("Enter ISBN", text: $viewModel.isbnInput)
-                            .keyboardType(.numbersAndPunctuation)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-
-                        Button(action: { showBarcodeScanner = true }) {
-                            HStack {
-                                Image(systemName: "barcode.viewfinder")
-                                Text("Scan Barcode")
-                            }
-                        }
-                    }
-                } else {
-                    Section("Title") {
-                        TextField("Title", text: $manualTitle)
-                    }
-                    Section("Author (optional)") {
-                        TextField("Author", text: $manualAuthor)
-                    }
-                }
-
-                Section(mode == .isbn ? "Custom Cover (optional)" : "Cover (optional)") {
-                    CustomCoverPicker(coverImageData: $customCoverData)
-                        .frame(maxWidth: .infinity)
-                }
-
-                if let errorMessage = viewModel.errorMessage {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                        if mode == .isbn {
-                            Button("Enter details manually instead") {
-                                viewModel.errorMessage = nil
-                                mode = .manual
-                            }
-                            .font(.caption)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Add Book")
-            .navigationBarTitleDisplayMode(.inline)
-            .scrollContentBackground(.hidden)
-            .background(SanctuaryBackground())
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        switch mode {
-                        case .isbn:
-                            Task {
-                                await viewModel.addBook(isbn: viewModel.isbnInput, customCoverData: customCoverData)
-                                if viewModel.errorMessage == nil {
-                                    dismiss()
-                                }
-                            }
-                        case .manual:
-                            viewModel.addBookManually(title: manualTitle, author: manualAuthor, coverImageData: customCoverData)
-                            if viewModel.errorMessage == nil {
-                                dismiss()
-                            }
-                        }
-                    }
-                    .disabled(isAddDisabled)
-                }
-            }
-            .overlay {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .padding()
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                }
-            }
-            .fullScreenCover(isPresented: $showBarcodeScanner) {
-                BarcodeScannerScreen { scannedCode in
-                    viewModel.isbnInput = scannedCode
-                }
-            }
-        }
-    }
-
-    private var isAddDisabled: Bool {
-        switch mode {
-        case .isbn:
-            return viewModel.isbnInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading
-        case .manual:
-            return manualTitle.trimmingCharacters(in: .whitespaces).isEmpty
-        }
-    }
+private enum BookCamera: Equatable {
+    case takePhoto
 }
 
 struct EditBookView: View {
     @ObservedObject var viewModel: LibraryViewModel
     let book: Book
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.palette) private var palette
 
     @State private var title: String
     @State private var author: String
     @State private var customCoverData: Data?
+    @State private var camera: BookCamera?
+    @State private var reviewImage: UIImage?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showPhotoPicker = false
 
     init(viewModel: LibraryViewModel, book: Book) {
         self.viewModel = viewModel
@@ -231,37 +124,88 @@ struct EditBookView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Title") {
-                    TextField("Title", text: $title)
-                }
-
-                Section("Author") {
-                    TextField("Author", text: $author)
-                }
-
-                Section("Cover") {
-                    CustomCoverPicker(coverImageData: $customCoverData)
-                        .frame(maxWidth: .infinity)
-                }
+        if camera == .takePhoto {
+            PhotoCoverFlowScreen { finalImage, isCutout, _ in
+                customCoverData = finalImage.preparedForCover(asCutout: isCutout)
+                camera = nil
+            } onCancel: {
+                camera = nil
             }
-            .navigationTitle("Edit Book")
-            .navigationBarTitleDisplayMode(.inline)
-            .scrollContentBackground(.hidden)
-            .background(SanctuaryBackground())
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        viewModel.updateBook(book, title: title, author: author, coverImageData: customCoverData)
-                        dismiss()
+        } else if let reviewImage {
+            BackgroundRemovalReviewScreen(originalImage: reviewImage) { finalImage, isCutout in
+                customCoverData = finalImage.preparedForCover(asCutout: isCutout)
+                self.reviewImage = nil
+            } onCancel: {
+                self.reviewImage = nil
+            }
+        } else {
+            NavigationStack {
+                ZStack {
+                    SanctuaryBackground()
+                    ScrollView {
+                        VStack(spacing: 22) {
+                            CoverPhotoCard(coverImageData: $customCoverData) {
+                                Task {
+                                    guard await CameraAccess.request() else { return }
+                                    camera = .takePhoto
+                                }
+                            } onChoosePhoto: {
+                                showPhotoPicker = true
+                            }
+
+                            editField(label: "Title", text: $title)
+                            editField(label: "Author", text: $author)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                .navigationTitle("Edit Book")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            viewModel.updateBook(book, title: title, author: author, coverImageData: customCoverData)
+                            dismiss()
+                        }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhoto, matching: .images)
+                .onChange(of: selectedPhoto) { _, item in
+                    guard let item else { return }
+                    Task {
+                        guard let data = try? await item.loadTransferable(type: Data.self),
+                              let image = UIImage.downsampled(from: data, maxPixelSize: 1600) else {
+                            return
+                        }
+                        reviewImage = image
+                        selectedPhoto = nil
+                    }
                 }
             }
+        }
+    }
+
+    private func editField(label: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(palette.muted)
+            TextField(label, text: text)
+                .textInputAutocapitalization(.words)
+                .font(.system(size: 17, weight: .medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(palette.line, lineWidth: 1)
+                )
         }
     }
 }
@@ -269,6 +213,7 @@ struct EditBookView: View {
 struct BookTileView: View {
     let book: Book
     var onPlace: (() -> Void)? = nil
+    var placesOnTap: Bool = false
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var onToggleCurrentlyReading: (() -> Void)? = nil
@@ -277,13 +222,13 @@ struct BookTileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Color.clear
-                .aspectRatio(120.0 / 170.0, contentMode: .fit)
+                .aspectRatio(2.0 / 3.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
                 .overlay {
-                    if let imageData = book.coverImageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
+                    if let imageData = book.coverImageData,
+                       BookLookupSession.isUsableCover(imageData),
+                       let uiImage = UIImage(data: imageData) {
+                        FillingCoverImage(uiImage: uiImage)
                     } else {
                         LinearGradient(
                             colors: [palette.muted, palette.ink],
@@ -299,6 +244,7 @@ struct BookTileView: View {
                         }
                     }
                 }
+                .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(alignment: .leading) {
                     LinearGradient(colors: [.black.opacity(0.22), .clear], startPoint: .leading, endPoint: .trailing)
@@ -311,7 +257,9 @@ struct BookTileView: View {
                 )
                 .shadow(color: .black.opacity(0.16), radius: 8, x: 2, y: 5)
                 .onTapGesture {
-                    onPlace?()
+                    if placesOnTap {
+                        onPlace?()
+                    }
                 }
                 .contextMenu {
                     if let onPlace {
@@ -346,156 +294,92 @@ struct BookTileView: View {
                 Text(book.title)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(palette.ink)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 Text(book.author)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(palette.muted)
                     .lineLimit(1)
             }
+            .frame(minHeight: 42, alignment: .top)
         }
-        .accessibilityHint("Tap to place on the table. Touch and hold for more.")
+        .accessibilityHint(placesOnTap ? "Tap to place on the table. Touch and hold for more." : "Touch and hold for more.")
     }
 }
 
-struct CustomCoverPicker: View {
-    @Binding var coverImageData: Data?
-    @Environment(\.palette) private var palette
-    @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var showScanner = false
-    @State private var showCamera = false
-    @State private var showPhotoPicker = false
-    @State private var pendingReviewImage: UIImage?
-    @State private var showReview = false
-    @State private var loadError: String?
+/// `scaledToFill` inside an overlay does not actually fill unless the image
+/// is given the overlay's exact size. Wes Anderson tiles were sitting short
+/// in the book slot because of that.
+struct FillingCoverImage: View {
+    let uiImage: UIImage
 
     var body: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                if let coverImageData, let uiImage = UIImage(data: coverImageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(palette.track)
-                        .overlay(
-                            Image(systemName: "photo.badge.plus")
-                                .font(.system(size: 24))
-                                .foregroundStyle(palette.faint)
-                        )
-                }
-            }
-            .frame(width: 120, height: 170)
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-            )
-
-            Menu {
-                Button {
-                    loadError = nil
-                    showScanner = true
-                } label: {
-                    Label("Scan Cover", systemImage: "viewfinder")
-                }
-
-                Button {
-                    loadError = nil
-                    showCamera = true
-                } label: {
-                    Label("Take Photo", systemImage: "camera")
-                }
-
-                Button {
-                    loadError = nil
-                    pendingReviewImage = nil
-                    showPhotoPicker = true
-                } label: {
-                    Label("Choose from Library", systemImage: "photo.on.rectangle")
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus")
-                    Text("Add Cover")
-                }
-                .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background(palette.ink, in: Capsule())
-                .foregroundStyle(.white)
-            }
-
-            if let loadError {
-                Text(loadError)
-                    .font(.caption2)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
-            }
-        }
-        .fullScreenCover(isPresented: $showScanner) {
-            CameraCoverCaptureScreen { image in
-                coverImageData = image.normalizedOrientation().jpegData(compressionQuality: 0.9)
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraCaptureFlowScreen { finalImage, isCutout in
-                let normalized = finalImage.normalizedOrientation()
-                coverImageData = isCutout ? normalized.pngData() : normalized.jpegData(compressionQuality: 0.9)
-                showCamera = false
-            } onCancel: {
-                showCamera = false
-            }
-        }
-        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
-        .onChange(of: showPhotoPicker) { _, isPresented in
-            if !isPresented {
-                presentReviewIfNeeded()
-            }
-        }
-        .onChange(of: selectedItem) { _, newItem in
-            guard let newItem else { return }
-            Task {
-                do {
-                    guard let data = try await newItem.loadTransferable(type: Data.self),
-                          let image = UIImage(data: data) else {
-                        throw CocoaError(.fileReadCorruptFile)
-                    }
-                    await MainActor.run {
-                        pendingReviewImage = image
-                        presentReviewIfNeeded()
-                    }
-                } catch {
-                    await MainActor.run {
-                        loadError = "Couldn't load that photo. Try picking a different one."
-                        selectedItem = nil
-                    }
-                }
-            }
-        }
-        .fullScreenCover(isPresented: $showReview) {
-            if let pendingReviewImage {
-                BackgroundRemovalReviewScreen(originalImage: pendingReviewImage) { finalImage, isCutout in
-                    let normalized = finalImage.normalizedOrientation()
-                    coverImageData = isCutout ? normalized.pngData() : normalized.jpegData(compressionQuality: 0.9)
-                    showReview = false
-                    self.pendingReviewImage = nil
-                } onCancel: {
-                    showReview = false
-                    self.pendingReviewImage = nil
-                }
-            }
+        GeometryReader { geo in
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
         }
     }
+}
 
-    /// `showPhotoPicker` and `showReview` are separate full-screen covers on the same view —
-    /// presenting one while the other is still animating out leaves SwiftUI unable to animate
-    /// both transitions at once, which showed up as a stuck blank screen. Only flip to the
-    /// review screen once the photo picker has actually finished closing.
-    private func presentReviewIfNeeded() {
-        guard pendingReviewImage != nil, !showPhotoPicker, !showReview else { return }
-        showReview = true
+struct CoverPhotoCard: View {
+    @Binding var coverImageData: Data?
+    var onTakePhoto: () -> Void
+    var onChoosePhoto: () -> Void
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Menu {
+                Button("Take photo", systemImage: "camera", action: onTakePhoto)
+                Button("Choose from photos", systemImage: "photo.on.rectangle", action: onChoosePhoto)
+            } label: {
+                Color.clear
+                    .aspectRatio(2.0 / 3.0, contentMode: .fit)
+                    .frame(width: 148)
+                    .overlay { coverContent }
+                    .background(palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(alignment: .leading) {
+                        LinearGradient(colors: [.black.opacity(0.18), .clear], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: 7)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(palette.line, lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.16), radius: 18, y: 10)
+            }
+            .buttonStyle(.plain)
+
+            Menu {
+                Button("Take photo", systemImage: "camera", action: onTakePhoto)
+                Button("Choose from photos", systemImage: "photo.on.rectangle", action: onChoosePhoto)
+            } label: {
+                Text(coverImageData == nil ? "Add a photo of the cover" : "Change photo")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(palette.ink)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private var coverContent: some View {
+        if let coverImageData,
+           let uiImage = UIImage(data: coverImageData) {
+            FillingCoverImage(uiImage: uiImage)
+        } else {
+            VStack(spacing: 10) {
+                Image(systemName: "camera")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(palette.faint)
+                Text("Cover")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(palette.faint)
+            }
+        }
     }
 }
 
@@ -507,5 +391,115 @@ extension UIImage {
     func normalizedOrientation() -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in draw(in: CGRect(origin: .zero, size: size)) }
+    }
+
+    /// Reads a photo at a capped pixel size so a full camera image never
+    /// gets decoded at original resolution. Orientation is applied as part
+    /// of the thumbnail, so callers do not need `normalizedOrientation()`.
+    static func downsampled(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
+        let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions as CFDictionary) else {
+            return nil
+        }
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions as CFDictionary) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
+    }
+
+    /// Shrinks a cover so a camera photo cannot take down a smaller iPad.
+    /// Cutouts stay PNG so transparent pixels are not flattened into a white box.
+    func preparedForCover(asCutout: Bool) -> Data? {
+        let source = asCutout ? trimmedToOpaqueContent() : self
+        if asCutout {
+            let small = source.downsampledPreservingAlpha(maxPixelSize: 1600)
+            return small.pngData()
+        }
+        guard let data = source.jpegData(compressionQuality: 0.95) ?? source.pngData(),
+              let small = UIImage.downsampled(from: data, maxPixelSize: 1600) else {
+            return source.jpegData(compressionQuality: 0.82)
+        }
+        return small.jpegData(compressionQuality: 0.82)
+    }
+
+    var hasAlphaChannel: Bool {
+        guard let alpha = cgImage?.alphaInfo else { return false }
+        switch alpha {
+        case .first, .last, .premultipliedFirst, .premultipliedLast, .alphaOnly:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Crops away empty transparent margins so a cut-out cover is just the book.
+    func trimmedToOpaqueContent(padding: CGFloat = 0) -> UIImage {
+        guard let cgImage else { return self }
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return self }
+
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        var pixels = [UInt8](repeating: 0, count: height * bytesPerRow)
+        guard let context = CGContext(
+            data: &pixels,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return self }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var minX = width
+        var minY = height
+        var maxX = 0
+        var maxY = 0
+        let alphaThreshold: UInt8 = 48
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let alpha = pixels[y * bytesPerRow + x * bytesPerPixel + 3]
+                guard alpha > alphaThreshold else { continue }
+                if x < minX { minX = x }
+                if x > maxX { maxX = x }
+                if y < minY { minY = y }
+                if y > maxY { maxY = y }
+            }
+        }
+
+        guard maxX > minX, maxY > minY else { return self }
+
+        let padX = Int(CGFloat(maxX - minX) * padding)
+        let padY = Int(CGFloat(maxY - minY) * padding)
+        let cropX = max(0, minX - padX)
+        let cropY = max(0, minY - padY)
+        let cropWidth = min(width - cropX, (maxX + padX) - cropX + 1)
+        let cropHeight = min(height - cropY, (maxY + padY) - cropY + 1)
+        let cropRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
+        guard let cropped = cgImage.cropping(to: cropRect) else { return self }
+        return UIImage(cgImage: cropped, scale: scale, orientation: imageOrientation)
+    }
+
+    func downsampledPreservingAlpha(maxPixelSize: CGFloat) -> UIImage {
+        let longest = max(size.width, size.height)
+        guard longest > maxPixelSize, longest > 0 else { return self }
+        let scaleFactor = maxPixelSize / longest
+        let newSize = CGSize(width: size.width * scaleFactor, height: size.height * scaleFactor)
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: newSize, format: format).image { _ in
+            draw(in: CGRect(origin: .zero, size: newSize))
+        }
     }
 }

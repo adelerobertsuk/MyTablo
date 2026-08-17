@@ -3,6 +3,7 @@ import SwiftUI
 struct TableSnapshotView: View {
     let composition: CoffeeTableComposition
     var size: CGSize = CGSize(width: 402, height: 874)
+    var showsShareMark: Bool = true
 
     var body: some View {
         ZStack {
@@ -20,14 +21,23 @@ struct TableSnapshotView: View {
         }
         .frame(width: size.width, height: size.height)
         .clipped()
+        .environment(\.tableLayout, TableLayout(
+            layoutSize: CGSize(
+                width: composition.layoutWidth >= 1 ? composition.layoutWidth : size.width,
+                height: composition.layoutHeight >= 1 ? composition.layoutHeight : size.height
+            ),
+            canvasSize: size
+        ))
         .overlay(alignment: .bottom) {
-            Text("MyTablo")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.92))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(.black.opacity(0.32), in: Capsule())
-                .padding(.bottom, 16)
+            if showsShareMark {
+                Text("MyTablo")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.32), in: Capsule())
+                    .padding(.bottom, 16)
+            }
         }
     }
 }

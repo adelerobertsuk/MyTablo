@@ -34,6 +34,10 @@ final class CoffeeTableComposition: Identifiable {
     var items: [ComposedBook]
     var decorations: [Decoration] = []
     var surfaceImageName: String = "Kate-table-WhitePlaster"
+    /// Pixel size of the table when this layout was first saved. Used to
+    /// scale positions when the screen rotates or a different device opens it.
+    var layoutWidth: Double = 0
+    var layoutHeight: Double = 0
 
     init(name: String, items: [ComposedBook] = [], decorations: [Decoration] = [], createdDate: Date = Date(), surfaceImageName: String = "Kate-table-WhitePlaster") {
         self.name = name

@@ -398,11 +398,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ReadingTable/ReadingTable.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "MyTablo shows today's events on the calendar you place on your table.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "MyTablo uses the camera to scan a barcode or photograph a book cover.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MyTablo uses your location for weather on the table, if you add it.";
@@ -436,11 +437,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ReadingTable/ReadingTable.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MyTablo;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "MyTablo shows today's events on the calendar you place on your table.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "MyTablo uses the camera to scan a barcode or photograph a book cover.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MyTablo uses your location for weather on the table, if you add it.";
@@ -474,7 +476,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ReadingTableWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;
@@ -505,7 +507,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ReadingTableWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FVJG2288UR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadingTableWidgets/Info.plist;

@@ -31,7 +31,7 @@ struct ReadingTableApp: App {
         }
 
         let context = container.mainContext
-        let metadataService = OpenLibraryMetadataService()
+        let metadataService = CompositeBookMetadataService()
         
         _libraryViewModel = StateObject(wrappedValue: LibraryViewModel(modelContext: context, metadataService: metadataService))
         _compositionViewModel = StateObject(wrappedValue: CoffeeTableCompositionViewModel(modelContext: context))

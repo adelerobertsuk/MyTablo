@@ -1,86 +1,74 @@
 import SwiftUI
+import WidgetKit
+import UIKit
+import ImageIO
 
-/// Placeholder for the widget's book data. Will be replaced by a real
-/// WidgetKit TimelineEntry once we wire up data sharing between the app
-/// and the widget extension.
-struct CurrentReadPreview {
-    let title: String
-    let author: String
-    let coverImage: UIImage?
+/// Shared App Group copy so the widget target can find the table picture
+/// without importing the app entry point.
+private let widgetAppGroupID = "group.com.adeleroberts.ReadingTable"
+private let widgetSnapshotFileName = "table-widget.jpg"
 
-    static let sample = CurrentReadPreview(
-        title: "The Secret History",
-        author: "Donna Tartt",
-        coverImage: nil
-    )
+enum WidgetSnapshot {
+    static var fileURL: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: widgetAppGroupID)?
+            .appendingPathComponent(widgetSnapshotFileName)
+    }
+
+    static func publish(_ image: UIImage) {
+        guard let fileURL else { return }
+        let maxPixel: CGFloat = 900
+        let longest = max(image.size.width, image.size.height)
+        let scale = longest > maxPixel && longest > 0 ? maxPixel / longest : 1
+        let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        guard drawSize.width > 1, drawSize.height > 1 else { return }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let flattened = UIGraphicsImageRenderer(size: drawSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: drawSize))
+        }
+        try? flattened.jpegData(compressionQuality: 0.82)?.write(to: fileURL, options: .atomic)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    static func loadImage() -> UIImage? {
+        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 900,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+        else {
+            return UIImage(data: data)
+        }
+        return UIImage(cgImage: cgImage)
+    }
 }
 
-/// Layout for the Small (2x2) home screen widget: a full-bleed book cover
-/// with the title/author legible over a bottom gradient scrim.
-struct SmallWidgetView: View {
-    let book: CurrentReadPreview
+/// Home-screen widget: the same picture as Share, shown in full.
+struct TableWidgetView: View {
+    let tableImage: UIImage?
     private let palette = Palette.light
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            backgroundLayer
-
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.72)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(book.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                Text(book.author)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.82))
-                    .lineLimit(1)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private var backgroundLayer: some View {
-        if let coverImage = book.coverImage {
-            Image(uiImage: coverImage)
-                .resizable()
-                .scaledToFill()
-        } else {
-            ZStack {
-                palette.ink
-                EllipticalGradient(
-                    gradient: Gradient(colors: [palette.accentGlow, Color.clear]),
-                    center: .center,
-                    startRadiusFraction: 0,
-                    endRadiusFraction: 0.7
-                )
-                Image(systemName: "book.closed.fill")
-                    .font(.system(size: 34, weight: .light))
-                    .foregroundStyle(.white.opacity(0.28))
+        ZStack {
+            palette.bg
+            if let tableImage {
+                Image(uiImage: tableImage)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(8)
             }
         }
     }
 }
 
-#Preview("With Cover Placeholder") {
-    SmallWidgetView(book: .sample)
-        .frame(width: 158, height: 158)
-}
-
-#Preview("No Cover Fallback") {
-    SmallWidgetView(
-        book: CurrentReadPreview(
-            title: "A Book With A Fairly Long Title",
-            author: "Unknown Author",
-            coverImage: nil
-        )
-    )
-    .frame(width: 158, height: 158)
+#Preview("Table") {
+    TableWidgetView(tableImage: nil)
+        .frame(width: 338, height: 158)
 }

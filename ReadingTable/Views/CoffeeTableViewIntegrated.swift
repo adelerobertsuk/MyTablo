@@ -12,6 +12,7 @@ struct StyleView: View {
     @ObservedObject var compositionViewModel: CoffeeTableCompositionViewModel
     var onDismiss: () -> Void = {}
     @Environment(\.palette) private var palette
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var showLibraryPicker = false
     @State private var showStickerPicker = false
@@ -32,6 +33,22 @@ struct StyleView: View {
         )
     }
 
+    private var isRegularLayout: Bool { horizontalSizeClass == .regular }
+    private var trayIconSize: CGFloat { isRegularLayout ? 22 : 16 }
+    private var trayLabelSize: CGFloat { isRegularLayout ? 12 : 10 }
+    private var surfaceSwatchSize: CGFloat { isRegularLayout ? 52 : 44 }
+
+    private var currentTableLayout: TableLayout {
+        TableLayout(
+            layoutSize: compositionViewModel.resolvedLayoutSize(for: canvasSize),
+            canvasSize: canvasSize
+        )
+    }
+
+    private var placementPoint: CGPoint {
+        currentTableLayout.stored(newItemPosition)
+    }
+
     private let surfaceOptions: [(name: String, label: String)] = [
         ("Kate-table-WhitePlaster", "Plaster"),
         ("Kate-table-Wood", "Wood"),
@@ -47,8 +64,14 @@ struct StyleView: View {
                         imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster",
                         size: geometry.size
                     )
-                    .onAppear { canvasSize = geometry.size }
-                    .onChange(of: geometry.size) { _, newSize in canvasSize = newSize }
+                    .onAppear {
+                        canvasSize = geometry.size
+                        compositionViewModel.ensureLayoutSize(matching: geometry.size)
+                    }
+                    .onChange(of: geometry.size) { _, newSize in
+                        canvasSize = newSize
+                        compositionViewModel.ensureLayoutSize(matching: newSize)
+                    }
                 }
                 .ignoresSafeArea()
 
@@ -118,10 +141,12 @@ struct StyleView: View {
                     VStack {
                         Spacer()
                         styleTray
+                            .frame(maxWidth: isRegularLayout ? 560 : .infinity)
                     }
-                    .padding(.bottom, 12)
+                    .padding(.bottom, isRegularLayout ? 20 : 12)
                 }
             }
+            .environment(\.tableLayout, currentTableLayout)
             .navigationTitle("Arrange")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -133,14 +158,14 @@ struct StyleView: View {
             }
         }
         .sheet(isPresented: $showLibraryPicker) {
-            LibraryView(viewModel: libraryViewModel) { selectedBook in
-                compositionViewModel.addExistingBook(selectedBook, at: newItemPosition)
+            LibraryView(viewModel: libraryViewModel, placesOnTap: true) { selectedBook in
+                compositionViewModel.addExistingBook(selectedBook, at: placementPoint)
                 showLibraryPicker = false
             }
         }
         .sheet(isPresented: $showStickerPicker) {
             StickerPickerView { imageName in
-                compositionViewModel.addDecoration(imageName: imageName, at: newItemPosition)
+                compositionViewModel.addDecoration(imageName: imageName, at: placementPoint)
             }
         }
         .sheet(item: $stickyNoteEditorContext) { context in
@@ -153,7 +178,7 @@ struct StyleView: View {
                 }
             } else {
                 StickyNoteEditorView { text, color in
-                    compositionViewModel.addStickyNote(text: text, color: color, at: newItemPosition)
+                    compositionViewModel.addStickyNote(text: text, color: color, at: placementPoint)
                 }
             }
         }
@@ -162,19 +187,18 @@ struct StyleView: View {
             guard let newItem else { return }
             Task {
                 do {
+                    // Polaroids display at ~140pt. Cap the decode so a 12–48MP
+                    // camera photo cannot take down the app (or Xcode).
                     guard let data = try await newItem.loadTransferable(type: Data.self),
-                          let image = UIImage(data: data) else {
-                        throw CocoaError(.fileReadCorruptFile)
-                    }
-                    let normalized = image.normalizedOrientation()
-                    guard let jpegData = normalized.jpegData(compressionQuality: 0.9) else {
+                          let image = UIImage.downsampled(from: data, maxPixelSize: 1600),
+                          let jpegData = image.jpegData(compressionQuality: 0.82) else {
                         throw CocoaError(.fileReadCorruptFile)
                     }
                     await MainActor.run {
                         if let editingPhotoDecoration {
                             compositionViewModel.updatePhotoDecorationImage(editingPhotoDecoration, imageData: jpegData)
                         } else {
-                            compositionViewModel.addPhotoDecoration(imageData: jpegData, at: newItemPosition)
+                            compositionViewModel.addPhotoDecoration(imageData: jpegData, at: placementPoint)
                         }
                         editingPhotoDecoration = nil
                         photoPickerItem = nil
@@ -211,7 +235,7 @@ struct StyleView: View {
                             .resizable()
                             .scaledToFill()
                             .scaleEffect(1.02, anchor: .center)
-                            .frame(width: 44, height: 44)
+                            .frame(width: surfaceSwatchSize, height: surfaceSwatchSize)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(
@@ -239,7 +263,7 @@ struct StyleView: View {
                     showPhotoPicker = true
                 }
                 trayButton(symbol: "calendar", title: "Calendar") {
-                    compositionViewModel.addDecoration(imageName: Decoration.calendarImageName, at: newItemPosition)
+                    compositionViewModel.addDecoration(imageName: Decoration.calendarImageName, at: placementPoint)
                 }
                 Button {
                     Haptics.select()
@@ -247,13 +271,13 @@ struct StyleView: View {
                 } label: {
                     VStack(spacing: 5) {
                         Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: trayIconSize, weight: .medium))
                         Text("Grid")
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: trayLabelSize, weight: .medium))
                             .lineLimit(1)
                     }
                     .foregroundStyle(snapToGridEnabled ? palette.accent : palette.ink)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .frame(maxWidth: .infinity, minHeight: isRegularLayout ? 52 : 44)
                 }
                 .accessibilityLabel(snapToGridEnabled ? "Snap to grid on" : "Snap to grid off")
             }
@@ -267,7 +291,7 @@ struct StyleView: View {
                 .stroke(palette.line, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.14), radius: 20, y: 8)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, isRegularLayout ? 0 : 16)
     }
 
     private func trayButton(symbol: String, title: String, action: @escaping () -> Void) -> some View {
@@ -277,14 +301,14 @@ struct StyleView: View {
         } label: {
             VStack(spacing: 5) {
                 Image(systemName: symbol)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: trayIconSize, weight: .medium))
                 Text(title)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: trayLabelSize, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
             .foregroundStyle(palette.ink)
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: isRegularLayout ? 52 : 44)
         }
         .accessibilityLabel(title)
     }
@@ -311,36 +335,72 @@ struct TableBookView: View {
     @State private var dragOffset: CGSize = .zero
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
+    @Environment(\.tableLayout) private var tableLayout
+
+    private var displayedOrigin: CGPoint {
+        tableLayout.display(CGPoint(x: composedBook.x, y: composedBook.y))
+    }
 
     private var coverImage: UIImage? {
-        guard let data = composedBook.book?.coverImageData else { return nil }
+        guard let data = composedBook.book?.coverImageData,
+              BookLookupSession.isUsableCover(data) else { return nil }
         return UIImage(data: data)
     }
 
+    private var isCutoutCover: Bool {
+        coverImage?.hasAlphaChannel == true
+    }
+
+    private var coverSize: CGSize {
+        let maxHeight: CGFloat = 168
+        let maxWidth: CGFloat = 140
+        guard let coverImage, coverImage.size.height > 1 else {
+            return CGSize(width: 112, height: maxHeight)
+        }
+        let aspect = coverImage.size.width / coverImage.size.height
+        var height = maxHeight
+        var width = height * aspect
+        if width > maxWidth {
+            width = maxWidth
+            height = width / aspect
+        }
+        return CGSize(width: width, height: height)
+    }
+
     private var coverContent: some View {
-        ZStack {
-            if let coverImage {
+        Group {
+            if let coverImage, isCutoutCover {
                 Image(uiImage: coverImage)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
+                    .frame(width: coverSize.width, height: coverSize.height)
+                    .shadow(color: .black.opacity(isSelected ? 0.35 : 0.22), radius: isSelected ? 10 : 6, x: 2, y: 4)
             } else {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.4))
+                ZStack {
+                    if let coverImage {
+                        Image(uiImage: coverImage)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.4))
+                    }
+                }
+                .frame(width: coverSize.width, height: coverSize.height)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .overlay(alignment: .leading) {
+                    LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 5)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(isSelected ? Color.accentColor : Color.black.opacity(0.15), lineWidth: isSelected ? 2 : 1)
+                )
+                .compositingGroup()
+                .shadow(color: .black.opacity(isSelected ? 0.35 : 0.25), radius: isSelected ? 10 : 6, x: 3, y: 5)
             }
         }
-        .frame(width: 112, height: 160)
-        .clipShape(RoundedRectangle(cornerRadius: 3))
-        .overlay(alignment: .leading) {
-            LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .leading, endPoint: .trailing)
-                .frame(width: 5)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 3)
-                .stroke(isSelected ? Color.accentColor : Color.black.opacity(0.15), lineWidth: isSelected ? 2 : 1)
-        )
-        .compositingGroup()
-        .shadow(color: .black.opacity(isSelected ? 0.35 : 0.25), radius: isSelected ? 10 : 6, x: 3, y: 5)
     }
 
     private var deleteButton: some View {
@@ -361,14 +421,17 @@ struct TableBookView: View {
                         dragOffset = value.translation
                     }
                     .onEnded { value in
-                        var newX = composedBook.x + value.translation.width
-                        var newY = composedBook.y + value.translation.height
+                        var newDisplay = CGPoint(
+                            x: displayedOrigin.x + value.translation.width,
+                            y: displayedOrigin.y + value.translation.height
+                        )
                         if snapToGridEnabled {
-                            newX = snapped(newX)
-                            newY = snapped(newY)
+                            newDisplay.x = snapped(newDisplay.x)
+                            newDisplay.y = snapped(newDisplay.y)
                         }
+                        let stored = tableLayout.stored(newDisplay)
                         dragOffset = .zero
-                        onUpdate(newX, newY, composedBook.scale, composedBook.rotation)
+                        onUpdate(stored.x, stored.y, composedBook.scale, composedBook.rotation)
                     },
                 MagnificationGesture()
                     .updating($magnifyBy) { value, state, _ in
@@ -410,13 +473,13 @@ struct TableBookView: View {
             }
             .scaleEffect(composedBook.scale * magnifyBy)
             .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
-            .position(x: composedBook.x + dragOffset.width, y: composedBook.y + dragOffset.height)
+            .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
             .gesture(dragMagnifyRotateGesture)
         } else {
             coverContent
                 .scaleEffect(composedBook.scale)
                 .rotationEffect(.degrees(composedBook.rotation))
-                .position(x: composedBook.x, y: composedBook.y)
+                .position(x: displayedOrigin.x, y: displayedOrigin.y)
         }
     }
 }

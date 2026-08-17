@@ -17,6 +17,11 @@ struct DecorationView: View {
     @State private var showRecordPlayerSheet = false
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
+    @Environment(\.tableLayout) private var tableLayout
+
+    private var displayedOrigin: CGPoint {
+        tableLayout.display(CGPoint(x: decoration.x, y: decoration.y))
+    }
 
     /// Papers/Retro Paper stickers are paper-scrap textures meant to read as a backing sheet,
     /// not an icon-sized sticker — they need a bigger frame than the other packs.
@@ -183,10 +188,14 @@ struct DecorationView: View {
                         dragOffset = value.translation
                     }
                     .onEnded { value in
-                        let newX = decoration.x + value.translation.width
-                        let newY = decoration.y + value.translation.height
+                        let stored = tableLayout.stored(
+                            CGPoint(
+                                x: displayedOrigin.x + value.translation.width,
+                                y: displayedOrigin.y + value.translation.height
+                            )
+                        )
                         dragOffset = .zero
-                        onUpdate(newX, newY, decoration.scale, decoration.rotation)
+                        onUpdate(stored.x, stored.y, decoration.scale, decoration.rotation)
                     },
                 MagnificationGesture()
                     .updating($magnifyBy) { value, state, _ in
@@ -238,7 +247,7 @@ struct DecorationView: View {
                 }
             .scaleEffect(decoration.scale * magnifyBy)
             .rotationEffect(.degrees(decoration.rotation + rotateBy.degrees))
-            .position(x: decoration.x + dragOffset.width, y: decoration.y + dragOffset.height)
+            .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
             .gesture(dragMagnifyRotateGesture)
             .sheet(isPresented: $showCalculatorSheet) {
                 CalculatorSheetView()
@@ -250,7 +259,7 @@ struct DecorationView: View {
             coverContent
                 .scaleEffect(decoration.scale)
                 .rotationEffect(.degrees(decoration.rotation))
-                .position(x: decoration.x, y: decoration.y)
+                .position(x: displayedOrigin.x, y: displayedOrigin.y)
         }
     }
 }

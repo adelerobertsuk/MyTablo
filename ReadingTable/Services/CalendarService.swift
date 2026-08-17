@@ -21,7 +21,7 @@ final class CalendarService: ObservableObject {
             object: store,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.fetchTodaysEvents()
             }
         }

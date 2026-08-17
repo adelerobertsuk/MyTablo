@@ -38,6 +38,39 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         }
     }
 
+    /// Locks the composition to the first real canvas it sees. Later rotates
+    /// keep these numbers and scale on screen instead of dropping items off the edge.
+    func ensureLayoutSize(matching canvas: CGSize) {
+        guard let composition = currentComposition else { return }
+        guard composition.layoutWidth < 1 || composition.layoutHeight < 1 else { return }
+        guard canvas.width > 1, canvas.height > 1 else { return }
+
+        var maxX = canvas.width
+        var maxY = canvas.height
+        for item in composition.items {
+            maxX = max(maxX, item.x)
+            maxY = max(maxY, item.y)
+        }
+        for decoration in composition.decorations {
+            maxX = max(maxX, decoration.x)
+            maxY = max(maxY, decoration.y)
+        }
+        let extra: Double = 80
+        composition.layoutWidth = maxX > canvas.width ? maxX + extra : canvas.width
+        composition.layoutHeight = maxY > canvas.height ? maxY + extra : canvas.height
+        save()
+        currentComposition = composition
+    }
+
+    func resolvedLayoutSize(for canvas: CGSize) -> CGSize {
+        let width = currentComposition?.layoutWidth ?? 0
+        let height = currentComposition?.layoutHeight ?? 0
+        return CGSize(
+            width: width >= 1 ? width : canvas.width,
+            height: height >= 1 ? height : canvas.height
+        )
+    }
+
     func loadCompositions() {
         do {
             let descriptor = FetchDescriptor<CoffeeTableComposition>(
