@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full-bleed table surface. Scaled a hair so the texture reaches every edge.
+/// Full-bleed table surface. The wood is cropped to the glass, never stretched.
 struct TableSurfaceView: View {
     let imageName: String
     var size: CGSize? = nil
@@ -8,11 +8,12 @@ struct TableSurfaceView: View {
     var body: some View {
         Image(imageName)
             .resizable()
+            .interpolation(.high)
             .scaledToFill()
             .frame(width: size?.width, height: size?.height)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .scaleEffect(1.02, anchor: .center)
             .background(Palette.light.bg)
             .clipped()
+            .allowsHitTesting(false)
     }
 }

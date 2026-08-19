@@ -29,6 +29,7 @@ final class Decoration: Identifiable {
     var zIndex: Double = 0
     var noteText: String? = nil
     var noteColorName: String? = nil
+    var noteInkData: Data? = nil
     var photoImageData: Data? = nil
     var clockStyleName: String? = nil
 
@@ -41,6 +42,7 @@ final class Decoration: Identifiable {
         zIndex: Double = 0,
         noteText: String? = nil,
         noteColorName: String? = nil,
+        noteInkData: Data? = nil,
         photoImageData: Data? = nil,
         clockStyleName: String? = nil
     ) {
@@ -52,6 +54,7 @@ final class Decoration: Identifiable {
         self.zIndex = zIndex
         self.noteText = noteText
         self.noteColorName = noteColorName
+        self.noteInkData = noteInkData
         self.photoImageData = photoImageData
         self.clockStyleName = clockStyleName
     }

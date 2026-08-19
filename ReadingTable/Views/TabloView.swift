@@ -16,46 +16,19 @@ struct TabloView: View {
     @State private var showStyle = false
     @State private var sharePNGData: Data?
     @State private var showShareSheet = false
-    @State private var tableSize: CGSize = CGSize(width: 402, height: 874)
+    @State private var canvasMetrics = CanvasMetrics.current
 
     var body: some View {
         ZStack {
-            GeometryReader { geometry in
-                TableSurfaceView(
-                    imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster",
-                    size: geometry.size
-                )
-                .onAppear {
-                    tableSize = geometry.size
-                    compositionViewModel.ensureLayoutSize(matching: geometry.size)
-                }
-                .onChange(of: geometry.size) { _, newSize in
-                    tableSize = newSize
-                    compositionViewModel.ensureLayoutSize(matching: newSize)
-                }
-            }
-            .ignoresSafeArea()
-
-            if let composition = compositionViewModel.currentComposition {
-                ForEach(composition.items.sorted(by: { $0.zIndex < $1.zIndex })) { composedBook in
-                    TableBookView(composedBook: composedBook, isInteractive: false)
-                        .zIndex(composedBook.zIndex)
-                }
-
-                ForEach(composition.decorations.sorted(by: { $0.zIndex < $1.zIndex })) { decoration in
-                    DecorationView(decoration: decoration, isInteractive: false)
-                        .zIndex(decoration.zIndex)
-                }
-            }
+            tableCanvas
+                .ignoresSafeArea()
 
             Color.clear
                 .contentShape(Rectangle())
                 .accessibilityLabel("Your table")
                 .accessibilityHint("Tap the bottom of the screen for Library, Arrange, and Share.")
                 .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        controlsRevealed = false
-                    }
+                    controlsRevealed = false
                 }
 
             VStack {
@@ -99,17 +72,15 @@ struct TabloView: View {
                             .accessibilityAddTraits(.isButton)
                             .onTapGesture {
                                 Haptics.tap()
-                                withAnimation(.easeInOut(duration: 0.22)) {
-                                    controlsRevealed = true
-                                }
+                                controlsRevealed = true
                                 refreshShareImage()
                             }
                     }
                 }
                 .frame(maxWidth: .infinity)
             }
+            .animation(.easeInOut(duration: 0.22), value: controlsRevealed)
         }
-        .environment(\.tableLayout, currentTableLayout)
         .fullScreenCover(isPresented: $showLibrary, onDismiss: refreshShareImage) {
             LibraryView(viewModel: libraryViewModel, onDismiss: { showLibrary = false }) { selectedBook in
                 compositionViewModel.addExistingBook(selectedBook, at: currentTableLayout.stored(newItemPosition))
@@ -123,6 +94,7 @@ struct TabloView: View {
             )
         }
         .onAppear {
+            compositionViewModel.ensureLayoutSize(matching: tableSize)
             // iPad's bottom tap strip is easy to miss on a 13-inch screen.
             // Show the bar up front; tap the table still hides it for photos.
             if tableIsEmpty || isRegularLayout {
@@ -134,11 +106,44 @@ struct TabloView: View {
 
     private var isRegularLayout: Bool { horizontalSizeClass == .regular }
 
+    private var tableSize: CGSize { canvasMetrics.size }
+
     private var currentTableLayout: TableLayout {
         TableLayout(
             layoutSize: compositionViewModel.resolvedLayoutSize(for: tableSize),
-            canvasSize: tableSize
+            canvasSize: tableSize,
+            safeInsets: canvasMetrics.safeInsets
         )
+    }
+
+    private var tableCanvas: some View {
+        ZStack {
+            TableSurfaceView(
+                imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster"
+            )
+
+            if let composition = compositionViewModel.currentComposition {
+                ForEach(composition.items.sorted(by: { $0.zIndex < $1.zIndex })) { composedBook in
+                    TableBookView(composedBook: composedBook, isInteractive: false)
+                        .zIndex(composedBook.zIndex)
+                }
+
+                ForEach(composition.decorations.sorted(by: { $0.zIndex < $1.zIndex })) { decoration in
+                    DecorationView(decoration: decoration, isInteractive: false)
+                        .zIndex(decoration.zIndex)
+                }
+            }
+
+            CanvasSizeReader { metrics in
+                canvasMetrics = metrics
+                compositionViewModel.ensureLayoutSize(matching: metrics.size)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .environment(\.tableLayout, currentTableLayout)
+        .transaction { $0.animation = nil }
     }
 
     private var tableIsEmpty: Bool {
@@ -147,9 +152,10 @@ struct TabloView: View {
     }
 
     private var newItemPosition: CGPoint {
-        CGPoint(
-            x: tableSize.width / 2 + Double.random(in: -30...30),
-            y: tableSize.height / 2 + Double.random(in: -30...30)
+        let bounds = currentTableLayout.itemBounds
+        return CGPoint(
+            x: bounds.midX + Double.random(in: -30...30),
+            y: bounds.midY + Double.random(in: -30...30)
         )
     }
 

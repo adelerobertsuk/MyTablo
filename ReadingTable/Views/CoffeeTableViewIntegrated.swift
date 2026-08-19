@@ -21,17 +21,20 @@ struct StyleView: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem?
     @State private var editingPhotoDecoration: Decoration?
-    @State private var canvasSize: CGSize = CGSize(width: 402, height: 874)
+    @State private var canvasMetrics = CanvasMetrics.current
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     /// Center of the actual table canvas, with a little jitter so repeated
     /// taps don't stack new items in an identical spot.
     private var newItemPosition: CGPoint {
-        CGPoint(
-            x: canvasSize.width / 2 + Double.random(in: -30...30),
-            y: canvasSize.height / 2 + Double.random(in: -30...30)
+        let bounds = currentTableLayout.itemBounds
+        return CGPoint(
+            x: bounds.midX + Double.random(in: -30...30),
+            y: bounds.midY + Double.random(in: -30...30)
         )
     }
+
+    private var canvasSize: CGSize { canvasMetrics.size }
 
     private var isRegularLayout: Bool { horizontalSizeClass == .regular }
     private var trayIconSize: CGFloat { isRegularLayout ? 22 : 16 }
@@ -41,7 +44,8 @@ struct StyleView: View {
     private var currentTableLayout: TableLayout {
         TableLayout(
             layoutSize: compositionViewModel.resolvedLayoutSize(for: canvasSize),
-            canvasSize: canvasSize
+            canvasSize: canvasSize,
+            safeInsets: canvasMetrics.safeInsets
         )
     }
 
@@ -59,30 +63,18 @@ struct StyleView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                GeometryReader { geometry in
+                ZStack {
                     TableSurfaceView(
-                        imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster",
-                        size: geometry.size
+                        imageName: compositionViewModel.currentComposition?.surfaceImageName ?? "Kate-table-WhitePlaster"
                     )
-                    .onAppear {
-                        canvasSize = geometry.size
-                        compositionViewModel.ensureLayoutSize(matching: geometry.size)
-                    }
-                    .onChange(of: geometry.size) { _, newSize in
-                        canvasSize = newSize
-                        compositionViewModel.ensureLayoutSize(matching: newSize)
-                    }
-                }
-                .ignoresSafeArea()
 
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        compositionViewModel.selectedBook = nil
-                        compositionViewModel.selectedDecoration = nil
-                    }
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            compositionViewModel.selectedBook = nil
+                            compositionViewModel.selectedDecoration = nil
+                        }
 
-                Group {
                     if let composition = compositionViewModel.currentComposition {
                         ForEach(composition.items.sorted(by: { $0.zIndex < $1.zIndex })) { composedBook in
                             TableBookView(
@@ -138,15 +130,25 @@ struct StyleView: View {
                         }
                     }
 
-                    VStack {
-                        Spacer()
-                        styleTray
-                            .frame(maxWidth: isRegularLayout ? 560 : .infinity)
+                    CanvasSizeReader { metrics in
+                        canvasMetrics = metrics
+                        compositionViewModel.ensureLayoutSize(matching: metrics.size)
                     }
-                    .padding(.bottom, isRegularLayout ? 20 : 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(false)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .environment(\.tableLayout, currentTableLayout)
+                .ignoresSafeArea()
+                .transaction { $0.animation = nil }
+
+                VStack {
+                    Spacer()
+                    styleTray
+                        .frame(maxWidth: isRegularLayout ? 560 : .infinity)
+                }
+                .padding(.bottom, isRegularLayout ? 20 : 12)
             }
-            .environment(\.tableLayout, currentTableLayout)
             .navigationTitle("Arrange")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -155,6 +157,9 @@ struct StyleView: View {
                         Image(systemName: "chevron.down")
                     }
                 }
+            }
+            .onAppear {
+                compositionViewModel.ensureLayoutSize(matching: canvasSize)
             }
         }
         .sheet(isPresented: $showLibraryPicker) {
@@ -171,14 +176,14 @@ struct StyleView: View {
         .sheet(item: $stickyNoteEditorContext) { context in
             if let decoration = context.decoration {
                 StickyNoteEditorView(
-                    existingText: decoration.noteText ?? "",
+                    existingInkData: decoration.noteInkData,
                     existingColor: StickyNoteColor(rawValue: decoration.noteColorName ?? "") ?? .yellow
-                ) { text, color in
-                    compositionViewModel.updateStickyNoteText(decoration, text: text, color: color)
+                ) { inkData, color in
+                    compositionViewModel.updateStickyNote(decoration, inkData: inkData, text: decoration.noteText, color: color)
                 }
             } else {
-                StickyNoteEditorView { text, color in
-                    compositionViewModel.addStickyNote(text: text, color: color, at: placementPoint)
+                StickyNoteEditorView { inkData, color in
+                    compositionViewModel.addStickyNote(inkData: inkData, color: color, at: placementPoint)
                 }
             }
         }
@@ -414,34 +419,15 @@ struct TableBookView: View {
     }
 
     private var dragMagnifyRotateGesture: some Gesture {
-        SimultaneousGesture(
-            SimultaneousGesture(
-                DragGesture()
-                    .onChanged { value in
-                        dragOffset = value.translation
-                    }
-                    .onEnded { value in
-                        var newDisplay = CGPoint(
-                            x: displayedOrigin.x + value.translation.width,
-                            y: displayedOrigin.y + value.translation.height
-                        )
-                        if snapToGridEnabled {
-                            newDisplay.x = snapped(newDisplay.x)
-                            newDisplay.y = snapped(newDisplay.y)
-                        }
-                        let stored = tableLayout.stored(newDisplay)
-                        dragOffset = .zero
-                        onUpdate(stored.x, stored.y, composedBook.scale, composedBook.rotation)
-                    },
-                MagnificationGesture()
-                    .updating($magnifyBy) { value, state, _ in
-                        state = value
-                    }
-                    .onEnded { value in
-                        let newScale = max(0.25, min(4.0, composedBook.scale * value))
-                        onUpdate(composedBook.x, composedBook.y, newScale, composedBook.rotation)
-                    }
-            ),
+        let magnifyRotate = SimultaneousGesture(
+            MagnificationGesture()
+                .updating($magnifyBy) { value, state, _ in
+                    state = value
+                }
+                .onEnded { value in
+                    let newScale = max(0.25, min(4.0, composedBook.scale * value))
+                    onUpdate(composedBook.x, composedBook.y, newScale, composedBook.rotation)
+                },
             RotationGesture()
                 .updating($rotateBy) { value, state, _ in
                     state = value
@@ -451,6 +437,26 @@ struct TableBookView: View {
                     onUpdate(composedBook.x, composedBook.y, composedBook.scale, newRotation)
                 }
         )
+        let drag = DragGesture()
+            .onChanged { value in
+                guard abs(magnifyBy - 1) < 0.04 else { return }
+                dragOffset = value.translation
+            }
+            .onEnded { value in
+                defer { dragOffset = .zero }
+                guard abs(magnifyBy - 1) < 0.04 else { return }
+                var newDisplay = CGPoint(
+                    x: displayedOrigin.x + value.translation.width,
+                    y: displayedOrigin.y + value.translation.height
+                )
+                if snapToGridEnabled {
+                    newDisplay.x = snapped(newDisplay.x)
+                    newDisplay.y = snapped(newDisplay.y)
+                }
+                let stored = tableLayout.clampedStored(fromDisplay: newDisplay)
+                onUpdate(stored.x, stored.y, composedBook.scale, composedBook.rotation)
+            }
+        return magnifyRotate.exclusively(before: drag)
     }
 
     var body: some View {
@@ -471,13 +477,13 @@ struct TableBookView: View {
                     deleteButton
                 }
             }
-            .scaleEffect(composedBook.scale * magnifyBy)
+            .scaleEffect(composedBook.scale * magnifyBy * tableLayout.itemScale)
             .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
             .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
             .gesture(dragMagnifyRotateGesture)
         } else {
             coverContent
-                .scaleEffect(composedBook.scale)
+                .scaleEffect(composedBook.scale * tableLayout.itemScale)
                 .rotationEffect(.degrees(composedBook.rotation))
                 .position(x: displayedOrigin.x, y: displayedOrigin.y)
         }

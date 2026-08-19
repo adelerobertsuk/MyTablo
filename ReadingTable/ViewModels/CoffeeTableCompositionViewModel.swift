@@ -198,7 +198,7 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         currentComposition = composition
     }
 
-    func addStickyNote(text: String, color: StickyNoteColor, at position: CGPoint = CGPoint(x: 150, y: 200)) {
+    func addStickyNote(inkData: Data, text: String? = nil, color: StickyNoteColor, at position: CGPoint = CGPoint(x: 150, y: 200)) {
         guard let composition = currentComposition else { return }
 
         let note = Decoration(
@@ -209,17 +209,19 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             scale: 1.0,
             zIndex: nextZIndex(in: composition),
             noteText: text,
-            noteColorName: color.rawValue
+            noteColorName: color.rawValue,
+            noteInkData: inkData
         )
         composition.decorations.append(note)
         save()
         currentComposition = composition
     }
 
-    func updateStickyNoteText(_ decoration: Decoration, text: String, color: StickyNoteColor) {
+    func updateStickyNote(_ decoration: Decoration, inkData: Data, text: String?, color: StickyNoteColor) {
         guard let composition = currentComposition else { return }
 
         if let index = composition.decorations.firstIndex(where: { $0.id == decoration.id }) {
+            composition.decorations[index].noteInkData = inkData
             composition.decorations[index].noteText = text
             composition.decorations[index].noteColorName = color.rawValue
             save()

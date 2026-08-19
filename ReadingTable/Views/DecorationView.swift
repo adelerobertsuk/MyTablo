@@ -1,4 +1,5 @@
 import SwiftUI
+import PencilKit
 
 struct DecorationView: View {
     let decoration: Decoration
@@ -36,9 +37,9 @@ struct DecorationView: View {
 
     private var visualSize: CGFloat {
         if decoration.isStickyNote { return 110 }
-        if isPaperSticker { return 130 }
-        if isTableFavourite { return 104 }
-        return 70
+        if isPaperSticker { return 176 }
+        if isTableFavourite { return 132 }
+        return 124
     }
     private var touchTargetSize: CGFloat {
         if decoration.isStickyNote { return 120 }
@@ -49,9 +50,9 @@ struct DecorationView: View {
         if decoration.isLocation { return 120 }
         if decoration.isCalculator { return 110 }
         if decoration.isMusic { return 116 }
-        if isPaperSticker { return 140 }
-        if isTableFavourite { return 116 }
-        return 88
+        if isPaperSticker { return 188 }
+        if isTableFavourite { return 144 }
+        return 140
     }
 
     /// The Polaroid frame artwork's transparent photo window, as a fraction of the whole image.
@@ -66,19 +67,28 @@ struct DecorationView: View {
         Group {
             if decoration.isStickyNote {
                 let color = StickyNoteColor(rawValue: decoration.noteColorName ?? "") ?? .yellow
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color.color)
-                    .overlay(
-                        Text(decoration.noteText ?? "")
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(color.color)
+                    if let data = decoration.noteInkData,
+                       let drawing = try? PKDrawing(data: data),
+                       !drawing.strokes.isEmpty {
+                        Image(uiImage: drawing.image(from: PencilNoteCanvas.bounds, scale: 2))
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    } else if let text = decoration.noteText, !text.isEmpty {
+                        Text(text)
                             .font(.system(size: 13, weight: .medium, design: .rounded))
                             .foregroundColor(.black.opacity(0.75))
                             .multilineTextAlignment(.center)
                             .lineLimit(6)
                             .padding(10)
-                    )
-                    .frame(width: visualSize, height: visualSize)
-                    .compositingGroup()
-                    .shadow(color: .black.opacity(isSelected ? 0.35 : 0.28), radius: isSelected ? 9 : 6, x: 2, y: 4)
+                    }
+                }
+                .frame(width: visualSize, height: visualSize)
+                .compositingGroup()
+                .shadow(color: .black.opacity(isSelected ? 0.35 : 0.28), radius: isSelected ? 9 : 6, x: 2, y: 4)
             } else if decoration.isPhotoFrame {
                 ZStack(alignment: .topLeading) {
                     if let data = decoration.photoImageData, let uiImage = UIImage(data: data) {
@@ -181,31 +191,15 @@ struct DecorationView: View {
     }
 
     private var dragMagnifyRotateGesture: some Gesture {
-        SimultaneousGesture(
-            SimultaneousGesture(
-                DragGesture()
-                    .onChanged { value in
-                        dragOffset = value.translation
-                    }
-                    .onEnded { value in
-                        let stored = tableLayout.stored(
-                            CGPoint(
-                                x: displayedOrigin.x + value.translation.width,
-                                y: displayedOrigin.y + value.translation.height
-                            )
-                        )
-                        dragOffset = .zero
-                        onUpdate(stored.x, stored.y, decoration.scale, decoration.rotation)
-                    },
-                MagnificationGesture()
-                    .updating($magnifyBy) { value, state, _ in
-                        state = value
-                    }
-                    .onEnded { value in
-                        let newScale = max(0.25, min(4.0, decoration.scale * value))
-                        onUpdate(decoration.x, decoration.y, newScale, decoration.rotation)
-                    }
-            ),
+        let magnifyRotate = SimultaneousGesture(
+            MagnificationGesture()
+                .updating($magnifyBy) { value, state, _ in
+                    state = value
+                }
+                .onEnded { value in
+                    let newScale = max(0.25, min(4.0, decoration.scale * value))
+                    onUpdate(decoration.x, decoration.y, newScale, decoration.rotation)
+                },
             RotationGesture()
                 .updating($rotateBy) { value, state, _ in
                     state = value
@@ -215,6 +209,22 @@ struct DecorationView: View {
                     onUpdate(decoration.x, decoration.y, decoration.scale, newRotation)
                 }
         )
+        let drag = DragGesture()
+            .onChanged { value in
+                guard abs(magnifyBy - 1) < 0.04 else { return }
+                dragOffset = value.translation
+            }
+            .onEnded { value in
+                defer { dragOffset = .zero }
+                guard abs(magnifyBy - 1) < 0.04 else { return }
+                let display = CGPoint(
+                    x: displayedOrigin.x + value.translation.width,
+                    y: displayedOrigin.y + value.translation.height
+                )
+                let stored = tableLayout.clampedStored(fromDisplay: display)
+                onUpdate(stored.x, stored.y, decoration.scale, decoration.rotation)
+            }
+        return magnifyRotate.exclusively(before: drag)
     }
 
     var body: some View {
@@ -245,7 +255,7 @@ struct DecorationView: View {
                         clockStyleButton
                     }
                 }
-            .scaleEffect(decoration.scale * magnifyBy)
+            .scaleEffect(decoration.scale * magnifyBy * tableLayout.itemScale)
             .rotationEffect(.degrees(decoration.rotation + rotateBy.degrees))
             .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
             .gesture(dragMagnifyRotateGesture)
@@ -257,7 +267,7 @@ struct DecorationView: View {
             }
         } else {
             coverContent
-                .scaleEffect(decoration.scale)
+                .scaleEffect(decoration.scale * tableLayout.itemScale)
                 .rotationEffect(.degrees(decoration.rotation))
                 .position(x: displayedOrigin.x, y: displayedOrigin.y)
         }
@@ -267,9 +277,10 @@ struct DecorationView: View {
 private struct CalendarDecorationContent: View {
     @StateObject private var calendarService = CalendarService()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.palette) private var palette
 
     private var weekday: String {
-        Date().formatted(.dateTime.weekday(.abbreviated)).uppercased()
+        Date().formatted(.dateTime.weekday(.wide))
     }
 
     private var dayNumber: String {
@@ -277,56 +288,58 @@ private struct CalendarDecorationContent: View {
     }
 
     private var month: String {
-        Date().formatted(.dateTime.month(.wide)).uppercased()
+        Date().formatted(.dateTime.month(.wide))
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(month.uppercased())
+                .font(.system(size: 9, weight: .medium))
+                .tracking(1.2)
+                .foregroundStyle(palette.muted)
+            Text(dayNumber)
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(palette.ink)
+                .padding(.top, 2)
             Text(weekday)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
-                .background(Color(red: 0.75, green: 0.24, blue: 0.22))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(palette.muted)
+                .padding(.top, 1)
 
-            VStack(spacing: 2) {
-                Text(dayNumber)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(.black.opacity(0.85))
-                Text(month)
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundColor(.black.opacity(0.5))
-            }
-            .padding(.top, 6)
+            Rectangle()
+                .fill(palette.line)
+                .frame(height: 1)
+                .padding(.vertical, 8)
 
-            Divider().padding(.horizontal, 10).padding(.top, 6)
-
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 if calendarService.accessDenied {
-                    Text("Enable Calendar access in Settings")
-                        .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+                    Text("Calendar is off")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(palette.muted)
                 } else if calendarService.todaysEvents.isEmpty {
-                    Text("No events today")
-                        .font(.system(size: 9))
-                        .foregroundColor(.secondary)
+                    Text("Nothing today")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(palette.muted)
                 } else {
                     ForEach(calendarService.todaysEvents.prefix(3)) { event in
                         Text(event.title)
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(.black.opacity(0.75))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(palette.ink)
                             .lineLimit(1)
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 4)
 
             Spacer(minLength: 0)
         }
-        .frame(width: 110, height: 130)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(12)
+        .frame(width: 118, height: 148)
+        .background(palette.card)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(palette.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .task {
             await calendarService.requestAccessAndFetchTodaysEvents()
         }
@@ -1235,35 +1248,46 @@ enum StickerPack: String, CaseIterable, Identifiable {
 }
 
 struct StickyNoteEditorView: View {
-    var existingText: String = ""
+    var existingInkData: Data? = nil
     var existingColor: StickyNoteColor = .yellow
-    var onSave: (String, StickyNoteColor) -> Void
+    var onSave: (Data, StickyNoteColor) -> Void
 
-    @State private var text: String
+    @State private var drawing: PKDrawing
     @State private var selectedColor: StickyNoteColor
     @Environment(\.dismiss) private var dismiss
     @Environment(\.palette) private var palette
 
-    init(existingText: String = "", existingColor: StickyNoteColor = .yellow, onSave: @escaping (String, StickyNoteColor) -> Void) {
-        self.existingText = existingText
+    init(
+        existingInkData: Data? = nil,
+        existingColor: StickyNoteColor = .yellow,
+        onSave: @escaping (Data, StickyNoteColor) -> Void
+    ) {
+        self.existingInkData = existingInkData
         self.existingColor = existingColor
         self.onSave = onSave
-        _text = State(initialValue: existingText)
+        _drawing = State(initialValue: (try? existingInkData.flatMap { try PKDrawing(data: $0) }) ?? PKDrawing())
         _selectedColor = State(initialValue: existingColor)
+    }
+
+    private var canPlace: Bool {
+        !drawing.strokes.isEmpty
     }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                TextEditor(text: $text)
-                    .font(.system(size: 17, weight: .medium))
-                    .scrollContentBackground(.hidden)
-                    .padding(18)
-                    .frame(minHeight: 180)
-                    .background(selectedColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            VStack(spacing: 20) {
+                PencilNoteCanvas(drawing: $drawing, paperColor: UIColor(selectedColor.color))
+                    .frame(width: PencilNoteCanvas.canvasSize.width, height: PencilNoteCanvas.canvasSize.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
+
+                Text("Write with your finger or Apple Pencil. It stays as handwriting.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(palette.muted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
 
                 HStack(spacing: 16) {
                     ForEach(StickyNoteColor.allCases) { color in
@@ -1288,7 +1312,7 @@ struct StickyNoteEditorView: View {
                 Spacer()
             }
             .background(SanctuaryBackground())
-            .navigationTitle(existingText.isEmpty ? "Note" : "Edit note")
+            .navigationTitle(existingInkData == nil ? "Note" : "Edit note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -1297,10 +1321,10 @@ struct StickyNoteEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Place") {
                         Haptics.success()
-                        onSave(text.trimmingCharacters(in: .whitespacesAndNewlines), selectedColor)
+                        onSave(drawing.dataRepresentation(), selectedColor)
                         dismiss()
                     }
-                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canPlace)
                 }
             }
         }

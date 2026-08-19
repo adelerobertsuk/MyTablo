@@ -70,11 +70,13 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
-    struct LookedUpBook {
+    struct LookedUpBook: Identifiable {
         var isbn: String
         var title: String
         var author: String
         var coverImageData: Data?
+
+        var id: String { isbn }
     }
 
     func lookupBook(isbn rawIsbn: String) async -> LookedUpBook? {
@@ -100,8 +102,73 @@ class LibraryViewModel: ObservableObject {
             errorMessage = error.errorDescription
             return nil
         } catch {
-            errorMessage = "We couldn't look that ISBN up just now. Add a photo of the cover instead."
+            errorMessage = "We couldn't look that up just now. Add a photo of the cover instead."
             return nil
+        }
+    }
+
+    func searchBooks(query raw: String) async -> [LookedUpBook] {
+        let query = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.count >= 2 else {
+            errorMessage = "Type a title or an author."
+            return []
+        }
+
+        if Self.looksLikeISBN(query) {
+            if let book = await lookupBook(isbn: query) {
+                return [book]
+            }
+            return []
+        }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            let hits = try await metadataService.searchBooks(query: query)
+            guard !hits.isEmpty else {
+                errorMessage = "We couldn't find that book. Try a shorter title, the author's name, or add a photo of the cover."
+                return []
+            }
+
+            return await withTaskGroup(of: (Int, LookedUpBook).self) { group in
+                let service = metadataService
+                for (index, hit) in hits.prefix(8).enumerated() {
+                    group.addTask {
+                        var cover: Data?
+                        if let url = hit.coverURL {
+                            cover = await BookLookupSession.downloadCover(
+                                from: url,
+                                session: BookLookupSession.make(timeout: 10)
+                            )
+                        }
+                        if cover == nil {
+                            cover = await service.fetchCoverImage(title: hit.title, author: hit.author)
+                        }
+                        return (
+                            index,
+                            LookedUpBook(
+                                isbn: hit.isbn,
+                                title: BookText.displayName(hit.title),
+                                author: BookText.displayName(hit.author),
+                                coverImageData: cover
+                            )
+                        )
+                    }
+                }
+                var mapped: [(Int, LookedUpBook)] = []
+                for await item in group {
+                    mapped.append(item)
+                }
+                return mapped.sorted { $0.0 < $1.0 }.map(\.1)
+            }
+        } catch let error as BookMetadataError {
+            errorMessage = error.errorDescription
+            return []
+        } catch {
+            errorMessage = "We couldn't look that up just now. Add a photo of the cover instead."
+            return []
         }
     }
 
@@ -163,6 +230,14 @@ class LibraryViewModel: ObservableObject {
 
     /// Strips everything but digits (and the ISBN-10 "X" check digit) so pasted
     /// ISBNs with hyphens, spaces, or stray newlines from a copied web page still resolve.
+    /// True when the user typed a barcode number, not a title.
+    static func looksLikeISBN(_ raw: String) -> Bool {
+        let isbn = sanitizeISBN(raw)
+        guard isbn.count == 10 || isbn.count == 13 else { return false }
+        let compact = raw.uppercased().filter { !$0.isWhitespace && $0 != "-" }
+        return compact == isbn
+    }
+
     static func sanitizeISBN(_ raw: String) -> String {
         raw.uppercased().filter { $0.isNumber || $0 == "X" }
     }

@@ -18,6 +18,7 @@ struct AddBookView: View {
     }
 
     @State private var stage: Stage = .find
+    @State private var query: String = ""
     @State private var isbn: String = ""
     @State private var title: String = ""
     @State private var author: String = ""
@@ -26,6 +27,9 @@ struct AddBookView: View {
     @State private var reviewImage: UIImage?
     @State private var showPhotoPicker = false
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var hits: [LibraryViewModel.LookedUpBook] = []
+    @State private var showISBN = false
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         if camera == .barcode {
@@ -33,7 +37,7 @@ struct AddBookView: View {
                 isbn = LibraryViewModel.sanitizeISBN(scannedCode)
                 camera = nil
                 Haptics.success()
-                Task { await lookUp() }
+                Task { await lookUpISBN() }
             } onCancel: {
                 camera = nil
             }
@@ -93,53 +97,21 @@ struct AddBookView: View {
 
     private var findStage: some View {
         VStack(spacing: 22) {
-            Text("Scan the barcode on the back of the book.")
+            Text("Search by title or author.")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(palette.ink)
                 .multilineTextAlignment(.center)
                 .padding(.top, 12)
 
-            Button {
-                Haptics.tap()
-                Task {
-                    guard await CameraAccess.request() else {
-                        viewModel.errorMessage = "Camera access is needed to scan a barcode. You can type the ISBN instead."
-                        return
-                    }
-                    camera = .barcode
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "barcode.viewfinder")
-                        .font(.system(size: 20, weight: .medium))
-                    Text("Scan barcode")
-                        .font(.system(size: 17, weight: .medium))
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(palette.ink, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-            .frame(minHeight: 52)
-
-            HStack(spacing: 12) {
-                Rectangle().fill(palette.line).frame(height: 1)
-                Text("or type the ISBN")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(palette.muted)
-                    .fixedSize()
-                Rectangle().fill(palette.line).frame(height: 1)
-            }
-            .padding(.top, 8)
-
             VStack(alignment: .leading, spacing: 8) {
-                Text("ISBN")
+                Text("Book")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(palette.muted)
-                TextField("978…", text: $isbn)
-                    .keyboardType(.numbersAndPunctuation)
-                    .textInputAutocapitalization(.never)
+                TextField("Artist's Way, Julia Cameron", text: $query)
+                    .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
+                    .submitLabel(.search)
+                    .focused($searchFocused)
                     .font(.system(size: 17, weight: .medium))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
@@ -148,27 +120,45 @@ struct AddBookView: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(palette.line, lineWidth: 1)
                     )
+                    .onSubmit {
+                        Task { await search() }
+                    }
             }
 
             Button {
                 Haptics.tap()
-                Task { await lookUp() }
+                searchFocused = false
+                Task { await search() }
             } label: {
-                Text(viewModel.isLoading ? "Finding your book" : "Look up")
+                Text(viewModel.isLoading ? "Finding your book" : "Find")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
-                        lookUpEnabled ? palette.accent : palette.faint,
+                        searchEnabled ? palette.accent : palette.faint,
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                     )
             }
-            .disabled(!lookUpEnabled || viewModel.isLoading)
+            .disabled(!searchEnabled || viewModel.isLoading)
             .frame(minHeight: 52)
 
             if viewModel.isLoading {
                 findingCard
+            }
+
+            if !hits.isEmpty, !viewModel.isLoading {
+                VStack(spacing: 10) {
+                    ForEach(hits) { hit in
+                        Button {
+                            Haptics.tap()
+                            applyHit(hit)
+                        } label: {
+                            searchRow(hit)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
 
             if let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
@@ -185,6 +175,98 @@ struct AddBookView: View {
                 }
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(palette.ink)
+            }
+
+            HStack(spacing: 12) {
+                Rectangle().fill(palette.line).frame(height: 1)
+                Text("or")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(palette.muted)
+                    .fixedSize()
+                Rectangle().fill(palette.line).frame(height: 1)
+            }
+            .padding(.top, 4)
+
+            secondaryButton(symbol: "camera.fill", title: "Photograph the cover") {
+                openCamera()
+            }
+
+            secondaryButton(symbol: "photo.on.rectangle", title: "Choose a photo") {
+                showPhotoPicker = true
+            }
+
+            Button {
+                Haptics.tap()
+                Task {
+                    guard await CameraAccess.request() else {
+                        viewModel.errorMessage = "Camera access is needed to scan a barcode. You can type the title instead."
+                        return
+                    }
+                    camera = .barcode
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "barcode.viewfinder")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("Scan barcode")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .foregroundStyle(palette.ink)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(palette.line, lineWidth: 1)
+                )
+            }
+
+            Button {
+                Haptics.tap()
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showISBN.toggle()
+                }
+            } label: {
+                Text(showISBN ? "Hide ISBN" : "I have the ISBN")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(palette.muted)
+            }
+
+            if showISBN {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ISBN")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(palette.muted)
+                    TextField("978…", text: $isbn)
+                        .keyboardType(.numbersAndPunctuation)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.system(size: 17, weight: .medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(palette.line, lineWidth: 1)
+                        )
+                }
+
+                Button {
+                    Haptics.tap()
+                    Task { await lookUpISBN() }
+                } label: {
+                    Text("Look up ISBN")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(palette.ink)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(palette.line, lineWidth: 1)
+                        )
+                }
+                .disabled(LibraryViewModel.sanitizeISBN(isbn).count < 10 || viewModel.isLoading)
             }
         }
     }
@@ -224,7 +306,7 @@ struct AddBookView: View {
             .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
             .frame(minHeight: 52)
 
-            Button("Try another book") {
+            Button("Search another book") {
                 Haptics.tap()
                 resetToFind()
             }
@@ -267,7 +349,7 @@ struct AddBookView: View {
             .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
             .frame(minHeight: 52)
 
-            Button("Scan a barcode instead") {
+            Button("Search by title instead") {
                 Haptics.tap()
                 resetToFind()
             }
@@ -311,20 +393,98 @@ struct AddBookView: View {
         }
     }
 
-    private var lookUpEnabled: Bool {
-        LibraryViewModel.sanitizeISBN(isbn).count >= 10
+    private func secondaryButton(symbol: String, title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .medium))
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+            }
+            .foregroundStyle(palette.ink)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(palette.line, lineWidth: 1)
+            )
+        }
     }
 
-    private func lookUp() async {
-        viewModel.isbnInput = isbn
-        if let result = await viewModel.lookupBook(isbn: isbn) {
-            isbn = result.isbn
-            title = result.title
-            author = result.author
-            coverData = result.coverImageData
-            stage = .found
+    private func searchRow(_ hit: LibraryViewModel.LookedUpBook) -> some View {
+        HStack(spacing: 14) {
+            Group {
+                if let data = hit.coverImageData, let image = UIImage(data: data) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(palette.faint.opacity(0.35))
+                }
+            }
+            .frame(width: 44, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(hit.title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(hit.author)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(palette.muted)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(palette.faint)
+        }
+        .padding(12)
+        .background(palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(palette.line, lineWidth: 1)
+        )
+    }
+
+    private var searchEnabled: Bool {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+    }
+
+    private func search() async {
+        hits = []
+        let results = await viewModel.searchBooks(query: query)
+        if results.count == 1, let only = results.first {
+            applyHit(only)
+            return
+        }
+        hits = results
+        if !results.isEmpty {
             Haptics.success()
         }
+    }
+
+    private func lookUpISBN() async {
+        if let result = await viewModel.lookupBook(isbn: isbn) {
+            applyHit(result)
+        }
+    }
+
+    private func applyHit(_ hit: LibraryViewModel.LookedUpBook) {
+        isbn = hit.isbn
+        title = hit.title
+        author = hit.author
+        coverData = hit.coverImageData
+        hits = []
+        stage = .found
+        Haptics.success()
     }
 
     private func openCamera() {
@@ -339,6 +499,9 @@ struct AddBookView: View {
 
     private func applyPhoto(_ image: UIImage, isCutout: Bool, readTextFrom original: UIImage) {
         coverData = image.preparedForCover(asCutout: isCutout)
+        if stage == .find {
+            stage = .photo
+        }
         Haptics.tap()
         Task {
             guard let guess = await recognizeCoverText(from: original) else { return }
@@ -364,7 +527,7 @@ struct AddBookView: View {
 
     private func saveAndDismiss() {
         viewModel.saveBook(
-            isbn: LibraryViewModel.sanitizeISBN(isbn),
+            isbn: LibraryViewModel.looksLikeISBN(isbn) ? LibraryViewModel.sanitizeISBN(isbn) : isbn,
             title: title,
             author: author,
             coverImageData: coverData
@@ -376,9 +539,13 @@ struct AddBookView: View {
 
     private func resetToFind() {
         stage = .find
+        query = ""
+        isbn = ""
         title = ""
         author = ""
         coverData = nil
+        hits = []
+        showISBN = false
         viewModel.errorMessage = nil
     }
 }

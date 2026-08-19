@@ -23,7 +23,7 @@ struct LibraryView: View {
                         Text("Nothing on the shelf yet")
                             .displayTitleStyle()
                             .multilineTextAlignment(.center)
-                        Text("Scan the barcode on the back of a book.")
+                        Text("Search by title or author.")
                             .captionStyle()
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)

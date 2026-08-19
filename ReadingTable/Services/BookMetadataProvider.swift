@@ -6,6 +6,7 @@ protocol BookMetadataProvider {
     func fetchCoverImage(for isbn: String) async throws -> Data?
     func fetchCoverImage(title: String, author: String) async -> Data?
     func lookupEdition(isbn: String) async throws -> (BookMetadata, Data?)
+    func searchBooks(query: String) async throws -> [BookSearchHit]
 }
 
 extension BookMetadataProvider {
@@ -21,6 +22,17 @@ extension BookMetadataProvider {
         }
         return (metadata, nil)
     }
+
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        throw BookMetadataError.notFound
+    }
+}
+
+struct BookSearchHit: Sendable {
+    var isbn: String
+    var title: String
+    var author: String
+    var coverURL: URL?
 }
 
 struct BookMetadata {
@@ -36,9 +48,9 @@ enum BookMetadataError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notFound:
-            return "We couldn't find a book with that ISBN. Take a photo of the cover instead."
+            return "We couldn't find that book. Try a shorter title, the author's name, or add a photo of the cover."
         case .lookupFailed:
-            return "We couldn't look that ISBN up just now. Take a photo of the cover instead."
+            return "We couldn't look that up just now. Add a photo of the cover instead."
         }
     }
 }
@@ -133,6 +145,20 @@ final class CompositeBookMetadataService: BookMetadataProvider {
             return data
         }
         return try? outcome.get()
+    }
+
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        let outcome = await firstSuccess(from: providers) { provider in
+            let hits = try await provider.searchBooks(query: query)
+            guard !hits.isEmpty else { throw BookMetadataError.notFound }
+            return hits
+        }
+        switch outcome {
+        case .success(let hits):
+            return hits
+        case .failure(let error):
+            throw error
+        }
     }
 
     private func firstSuccess<T: Sendable>(
@@ -254,6 +280,39 @@ final class GoogleBooksAtomMetadataService: BookMetadataProvider {
         await searchCover(title: title, author: author)
     }
 
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { throw BookMetadataError.notFound }
+
+        var components = URLComponents(string: "https://books.google.com/books/feeds/volumes")
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: trimmed),
+            URLQueryItem(name: "max-results", value: "8")
+        ]
+        guard let url = components?.url else { throw BookMetadataError.lookupFailed }
+
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                throw BookMetadataError.lookupFailed
+            }
+            let books = AtomBookParser.parseAll(data)
+            guard !books.isEmpty else { throw BookMetadataError.notFound }
+            return books.enumerated().map { index, book in
+                BookSearchHit(
+                    isbn: book.volumeID.map { "gb-\($0)" } ?? "gb-\(index)-\(book.title.hashValue)",
+                    title: book.title,
+                    author: book.author,
+                    coverURL: book.coverURL
+                )
+            }
+        } catch let error as BookMetadataError {
+            throw error
+        } catch {
+            throw BookMetadataError.lookupFailed
+        }
+    }
+
     private func searchCover(title: String, author: String) async -> Data? {
         var components = URLComponents(string: "https://books.google.com/books/feeds/volumes")
         components?.queryItems = [
@@ -288,14 +347,25 @@ private final class AtomBookParser: NSObject, XMLParserDelegate {
     private var author: String?
     private var volumeID: String?
     private var thumbnail: String?
+    private let limit: Int
+    private var collected: [AtomBook] = []
+
+    init(limit: Int = 1) {
+        self.limit = limit
+        super.init()
+    }
 
     static func parse(_ data: Data) -> AtomBook? {
+        parseAll(data, limit: 1).first
+    }
+
+    static func parseAll(_ data: Data, limit: Int = 8) -> [AtomBook] {
         let parser = XMLParser(data: data)
-        let delegate = AtomBookParser()
+        let delegate = AtomBookParser(limit: limit)
         parser.delegate = delegate
         parser.shouldProcessNamespaces = true
         parser.parse()
-        return delegate.book
+        return delegate.collected
     }
 
     private var book: AtomBook? {
@@ -356,7 +426,17 @@ private final class AtomBookParser: NSObject, XMLParserDelegate {
             }
         }
         if elementName == "entry" {
-            parser.abortParsing()
+            if let finished = book {
+                collected.append(finished)
+            }
+            title = nil
+            author = nil
+            volumeID = nil
+            thumbnail = nil
+            inEntry = false
+            if collected.count >= limit {
+                parser.abortParsing()
+            }
         }
     }
 
@@ -394,6 +474,39 @@ final class GoogleBooksJSONMetadataService: BookMetadataProvider {
     func fetchCoverImage(for isbn: String) async throws -> Data? {
         guard let url = try? await lookup(isbn: isbn).coverURL else { return nil }
         return await BookLookupSession.downloadCover(from: url, session: session)
+    }
+
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { throw BookMetadataError.notFound }
+
+        var components = URLComponents(string: "https://www.googleapis.com/books/v1/volumes")
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: trimmed),
+            URLQueryItem(name: "maxResults", value: "8")
+        ]
+        guard let url = components?.url else { throw BookMetadataError.lookupFailed }
+
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse else {
+                throw BookMetadataError.lookupFailed
+            }
+            if http.statusCode == 429 {
+                throw BookMetadataError.lookupFailed
+            }
+            guard (200...299).contains(http.statusCode) else {
+                throw BookMetadataError.lookupFailed
+            }
+            let decoded = try JSONDecoder().decode(GoogleBooksVolumeList.self, from: data)
+            let hits = (decoded.items ?? []).compactMap(\.searchHit)
+            guard !hits.isEmpty else { throw BookMetadataError.notFound }
+            return hits
+        } catch let error as BookMetadataError {
+            throw error
+        } catch {
+            throw BookMetadataError.lookupFailed
+        }
     }
 
     private func lookup(isbn: String) async throws -> AtomBook {
@@ -441,12 +554,43 @@ private struct GoogleBooksVolumeList: Decodable {
     struct Item: Decodable {
         let id: String?
         let volumeInfo: VolumeInfo
+
+        var searchHit: BookSearchHit? {
+            guard let title = volumeInfo.title, !title.isEmpty else { return nil }
+            return BookSearchHit(
+                isbn: volumeInfo.preferredISBN ?? id.map { "gb-\($0)" } ?? "gb-\(title.hashValue)",
+                title: title,
+                author: volumeInfo.authors?.first ?? "Unknown Author",
+                coverURL: volumeInfo.coverURL
+            )
+        }
     }
 
     struct VolumeInfo: Decodable {
         let title: String?
         let authors: [String]?
         let imageLinks: ImageLinks?
+        let industryIdentifiers: [IndustryIdentifier]?
+
+        var preferredISBN: String? {
+            let identifiers = industryIdentifiers ?? []
+            if let isbn13 = identifiers.first(where: { $0.type == "ISBN_13" })?.identifier {
+                return isbn13
+            }
+            return identifiers.first(where: { $0.type == "ISBN_10" })?.identifier
+        }
+
+        var coverURL: URL? {
+            guard var thumbnail = imageLinks?.thumbnail ?? imageLinks?.smallThumbnail else { return nil }
+            thumbnail = thumbnail.replacingOccurrences(of: "http://", with: "https://")
+            thumbnail = thumbnail.replacingOccurrences(of: "zoom=1", with: "zoom=2")
+            return URL(string: thumbnail)
+        }
+    }
+
+    struct IndustryIdentifier: Decodable {
+        let type: String
+        let identifier: String
     }
 
     struct ImageLinks: Decodable {
@@ -500,6 +644,46 @@ final class ITunesBookMetadataService: BookMetadataProvider {
         return nil
     }
 
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { throw BookMetadataError.notFound }
+        var components = URLComponents(string: "https://itunes.apple.com/search")
+        components?.queryItems = [
+            URLQueryItem(name: "term", value: trimmed),
+            URLQueryItem(name: "entity", value: "ebook"),
+            URLQueryItem(name: "limit", value: "8")
+        ]
+        guard let url = components?.url else { throw BookMetadataError.lookupFailed }
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                throw BookMetadataError.lookupFailed
+            }
+            let decoded = try JSONDecoder().decode(ITunesLookup.self, from: data)
+            let hits: [BookSearchHit] = decoded.results.compactMap { item in
+                let title = item.trackName ?? item.collectionName
+                guard let title, !title.isEmpty else { return nil }
+                var cover: URL?
+                if let artwork = item.artworkUrl100 {
+                    cover = URL(string: artwork.replacingOccurrences(of: "100x100bb", with: "600x600bb"))
+                }
+                let isbn = item.trackId.map { "itunes-\($0)" } ?? "itunes-\(title.hashValue)"
+                return BookSearchHit(
+                    isbn: isbn,
+                    title: title,
+                    author: item.artistName ?? "Unknown Author",
+                    coverURL: cover
+                )
+            }
+            guard !hits.isEmpty else { throw BookMetadataError.notFound }
+            return hits
+        } catch let error as BookMetadataError {
+            throw error
+        } catch {
+            throw BookMetadataError.lookupFailed
+        }
+    }
+
     private func lookup(isbn: String) async throws -> AtomBook {
         var components = URLComponents(string: "https://itunes.apple.com/lookup")
         components?.queryItems = [URLQueryItem(name: "isbn", value: isbn)]
@@ -541,6 +725,7 @@ private struct ITunesLookup: Decodable {
     let results: [Item]
 
     struct Item: Decodable {
+        let trackId: Int?
         let trackName: String?
         let collectionName: String?
         let artistName: String?
@@ -601,6 +786,54 @@ final class OpenLibraryMetadataService: BookMetadataProvider {
             return cover
         }
         return nil
+    }
+
+    func searchBooks(query: String) async throws -> [BookSearchHit] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { throw BookMetadataError.notFound }
+        var components = URLComponents(string: "https://openlibrary.org/search.json")
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: trimmed),
+            URLQueryItem(name: "fields", value: "key,title,subtitle,author_name,cover_i,isbn"),
+            URLQueryItem(name: "limit", value: "8")
+        ]
+        guard let url = components?.url else { throw BookMetadataError.lookupFailed }
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                throw BookMetadataError.lookupFailed
+            }
+            let decoded = try JSONDecoder().decode(OpenLibrarySearch.self, from: data)
+            let hits: [BookSearchHit] = decoded.docs.compactMap { doc in
+                guard let title = doc.title, !title.isEmpty else { return nil }
+                let displayTitle: String
+                if let subtitle = doc.subtitle, !subtitle.isEmpty {
+                    displayTitle = "\(title): \(subtitle)"
+                } else {
+                    displayTitle = title
+                }
+                let isbn = doc.isbn?.first(where: { $0.count == 13 })
+                    ?? doc.isbn?.first
+                    ?? doc.key.map { "ol-\($0.replacingOccurrences(of: "/", with: "-"))" }
+                    ?? "ol-\(title.hashValue)"
+                var cover: URL?
+                if let coverID = doc.cover_i {
+                    cover = URL(string: "https://covers.openlibrary.org/b/id/\(coverID)-L.jpg")
+                }
+                return BookSearchHit(
+                    isbn: isbn,
+                    title: displayTitle,
+                    author: doc.author_name?.first ?? "Unknown Author",
+                    coverURL: cover
+                )
+            }
+            guard !hits.isEmpty else { throw BookMetadataError.notFound }
+            return hits
+        } catch let error as BookMetadataError {
+            throw error
+        } catch {
+            throw BookMetadataError.lookupFailed
+        }
     }
 
     private struct SearchHit {
@@ -677,10 +910,12 @@ private struct OpenLibrarySearch: Decodable {
     let docs: [Doc]
 
     struct Doc: Decodable {
+        let key: String?
         let title: String?
         let subtitle: String?
         let author_name: [String]?
         let cover_i: Int?
+        let isbn: [String]?
     }
 }
 
