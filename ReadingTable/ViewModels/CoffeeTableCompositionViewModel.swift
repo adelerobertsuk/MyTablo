@@ -45,19 +45,8 @@ class CoffeeTableCompositionViewModel: ObservableObject {
         guard composition.layoutWidth < 1 || composition.layoutHeight < 1 else { return }
         guard canvas.width > 1, canvas.height > 1 else { return }
 
-        var maxX = canvas.width
-        var maxY = canvas.height
-        for item in composition.items {
-            maxX = max(maxX, item.x)
-            maxY = max(maxY, item.y)
-        }
-        for decoration in composition.decorations {
-            maxX = max(maxX, decoration.x)
-            maxY = max(maxY, decoration.y)
-        }
-        let extra: Double = 80
-        composition.layoutWidth = maxX > canvas.width ? maxX + extra : canvas.width
-        composition.layoutHeight = maxY > canvas.height ? maxY + extra : canvas.height
+        composition.layoutWidth = canvas.width
+        composition.layoutHeight = canvas.height
         save()
         currentComposition = composition
     }

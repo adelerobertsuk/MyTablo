@@ -19,68 +19,11 @@ struct TabloView: View {
     @State private var canvasMetrics = CanvasMetrics.current
 
     var body: some View {
-        ZStack {
-            tableCanvas
-                .ignoresSafeArea()
-
-            Color.clear
-                .contentShape(Rectangle())
-                .accessibilityLabel("Your table")
-                .accessibilityHint("Tap the bottom of the screen for Library, Arrange, and Share.")
-                .onTapGesture {
-                    controlsRevealed = false
-                }
-
-            VStack {
-                Spacer()
-
-                if tableIsEmpty && controlsRevealed {
-                    Text("This table is yours. Add a book to begin.")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(.black.opacity(0.38), in: Capsule())
-                        .padding(.horizontal, 28)
-                        .padding(.bottom, 10)
-                        .transition(.opacity)
-                }
-
-                ZStack {
-                    if controlsRevealed {
-                        VStack(spacing: 8) {
-                            if let notice = sharingPrivacyNotice {
-                                Text(notice)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(.white)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(.black.opacity(0.42), in: Capsule())
-                                    .padding(.horizontal, 24)
-                            }
-                            revealedControlBar
-                        }
-                            .frame(minHeight: 110)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .frame(height: isRegularLayout ? 160 : 110)
-                            .accessibilityLabel("Show table controls")
-                            .accessibilityAddTraits(.isButton)
-                            .onTapGesture {
-                                Haptics.tap()
-                                controlsRevealed = true
-                                refreshShareImage()
-                            }
-                    }
-                }
-                .frame(maxWidth: .infinity)
+        tableCanvas
+            .ignoresSafeArea()
+            .overlay(alignment: .bottom) {
+                revealedControlBar
             }
-            .animation(.easeInOut(duration: 0.22), value: controlsRevealed)
-        }
         .fullScreenCover(isPresented: $showLibrary, onDismiss: refreshShareImage) {
             LibraryView(viewModel: libraryViewModel, onDismiss: { showLibrary = false }) { selectedBook in
                 compositionViewModel.addExistingBook(selectedBook, at: currentTableLayout.stored(newItemPosition))

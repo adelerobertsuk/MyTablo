@@ -6,14 +6,16 @@ struct TableSurfaceView: View {
     var size: CGSize? = nil
 
     var body: some View {
-        Image(imageName)
-            .resizable()
-            .interpolation(.high)
-            .scaledToFill()
-            .frame(width: size?.width, height: size?.height)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Palette.light.bg)
-            .clipped()
-            .allowsHitTesting(false)
+        GeometryReader { geo in
+            let frame = size ?? geo.size
+            Image(imageName)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFill()
+                .frame(width: frame.width, height: frame.height)
+                .clipped()
+        }
+        .background(Palette.light.bg)
+        .allowsHitTesting(false)
     }
 }
