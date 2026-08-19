@@ -67,8 +67,12 @@ class CoffeeTableCompositionViewModel: ObservableObject {
             )
             self.compositions = try modelContext.fetch(descriptor)
             repairDanglingBookReferences()
-            if let first = compositions.first {
-                self.currentComposition = first
+            if let idString = UserDefaults.standard.string(forKey: Self.currentTableDefaultsKey),
+               let id = UUID(uuidString: idString),
+               let match = compositions.first(where: { $0.tableID == id }) {
+                currentComposition = match
+            } else if let first = compositions.first {
+                selectComposition(first)
             }
         } catch {
             self.errorMessage = "Failed to load compositions: \(error.localizedDescription)"
@@ -287,5 +291,87 @@ class CoffeeTableCompositionViewModel: ObservableObject {
 
         save()
         currentComposition = composition
+    }
+
+    private static let currentTableDefaultsKey = "currentTabloID"
+
+    func selectComposition(_ composition: CoffeeTableComposition) {
+        selectedBook = nil
+        selectedDecoration = nil
+        currentComposition = composition
+        UserDefaults.standard.set(composition.tableID.uuidString, forKey: Self.currentTableDefaultsKey)
+    }
+
+    func createBlankTable(named name: String) {
+        let table = CoffeeTableComposition(name: cleanedName(name))
+        modelContext.insert(table)
+        save()
+        compositions.insert(table, at: 0)
+        selectComposition(table)
+    }
+
+    func duplicateCurrent(named name: String) {
+        guard let source = currentComposition else { return }
+        let table = CoffeeTableComposition(
+            name: cleanedName(name),
+            surfaceImageName: source.surfaceImageName
+        )
+        table.layoutWidth = source.layoutWidth
+        table.layoutHeight = source.layoutHeight
+        for item in source.items {
+            let copy = ComposedBook(
+                book: item.book,
+                x: item.x,
+                y: item.y,
+                rotation: item.rotation,
+                scale: item.scale,
+                zIndex: item.zIndex
+            )
+            table.items.append(copy)
+        }
+        for decoration in source.decorations {
+            let copy = Decoration(
+                imageName: decoration.imageName,
+                x: decoration.x,
+                y: decoration.y,
+                rotation: decoration.rotation,
+                scale: decoration.scale,
+                zIndex: decoration.zIndex,
+                noteText: decoration.noteText,
+                noteColorName: decoration.noteColorName,
+                noteInkData: decoration.noteInkData,
+                photoImageData: decoration.photoImageData,
+                clockStyleName: decoration.clockStyleName
+            )
+            table.decorations.append(copy)
+        }
+        modelContext.insert(table)
+        save()
+        compositions.insert(table, at: 0)
+        selectComposition(table)
+    }
+
+    func rename(_ composition: CoffeeTableComposition, to name: String) {
+        composition.name = cleanedName(name)
+        save()
+        if composition.tableID == currentComposition?.tableID {
+            currentComposition = composition
+        }
+    }
+
+    func deleteTable(_ composition: CoffeeTableComposition) {
+        guard compositions.count > 1 else { return }
+        let wasCurrent = composition.tableID == currentComposition?.tableID
+        modelContext.delete(composition)
+        save()
+        compositions.removeAll { $0.tableID == composition.tableID }
+        if wasCurrent, let next = compositions.first {
+            selectComposition(next)
+        }
+    }
+
+    private func cleanedName(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Table" : trimmed
     }
 }

@@ -45,6 +45,6 @@ struct ReadingTableWidgets: Widget {
         .contentMarginsDisabled()
         .configurationDisplayName("Your table")
         .description("A mini picture of your table.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

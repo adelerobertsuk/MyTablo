@@ -338,6 +338,7 @@ struct TableBookView: View {
     }
 
     @State private var dragOffset: CGSize = .zero
+    @State private var displayCover: UIImage?
     @GestureState private var magnifyBy: CGFloat = 1.0
     @GestureState private var rotateBy: Angle = .zero
     @Environment(\.tableLayout) private var tableLayout
@@ -346,23 +347,23 @@ struct TableBookView: View {
         tableLayout.display(CGPoint(x: composedBook.x, y: composedBook.y))
     }
 
-    private var coverImage: UIImage? {
-        guard let data = composedBook.book?.coverImageData,
-              BookLookupSession.isUsableCover(data) else { return nil }
-        return UIImage(data: data)
-    }
+    private var coverImage: UIImage? { displayCover }
 
     private var isCutoutCover: Bool {
         coverImage?.hasAlphaChannel == true
     }
 
     private var coverSize: CGSize {
+        Self.fittedCoverSize(for: displayCover)
+    }
+
+    private static func fittedCoverSize(for image: UIImage?) -> CGSize {
         let maxHeight: CGFloat = 168
         let maxWidth: CGFloat = 140
-        guard let coverImage, coverImage.size.height > 1 else {
+        guard let image, image.size.height > 1 else {
             return CGSize(width: 112, height: maxHeight)
         }
-        let aspect = coverImage.size.width / coverImage.size.height
+        let aspect = image.size.width / image.size.height
         var height = maxHeight
         var width = height * aspect
         if width > maxWidth {
@@ -370,6 +371,21 @@ struct TableBookView: View {
             height = width / aspect
         }
         return CGSize(width: width, height: height)
+    }
+
+    private func refreshDisplayCover() {
+        guard let data = composedBook.book?.coverImageData,
+              let image = UIImage(data: data) else {
+            displayCover = nil
+            return
+        }
+        let size = Self.fittedCoverSize(for: image)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        format.opaque = image.hasAlphaChannel == false
+        displayCover = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 
     private var coverContent: some View {
@@ -460,32 +476,38 @@ struct TableBookView: View {
     }
 
     var body: some View {
-        if isInteractive {
-            ZStack(alignment: .topTrailing) {
-                coverContent
-                    .highPriorityGesture(
-                        TapGesture(count: 2)
-                            .onEnded {
-                                onStraighten()
-                            }
-                            .exclusively(before: TapGesture(count: 1).onEnded {
-                                onSelect()
-                            })
-                    )
+        Group {
+            if isInteractive {
+                ZStack(alignment: .topTrailing) {
+                    coverContent
+                        .highPriorityGesture(
+                            TapGesture(count: 2)
+                                .onEnded {
+                                    onStraighten()
+                                }
+                                .exclusively(before: TapGesture(count: 1).onEnded {
+                                    onSelect()
+                                })
+                        )
 
-                if isSelected {
-                    deleteButton
+                    if isSelected {
+                        deleteButton
+                    }
                 }
+                .scaleEffect(composedBook.scale * magnifyBy * tableLayout.itemScale)
+                .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
+                .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
+                .gesture(dragMagnifyRotateGesture)
+            } else {
+                coverContent
+                    .scaleEffect(composedBook.scale * tableLayout.itemScale)
+                    .rotationEffect(.degrees(composedBook.rotation))
+                    .position(x: displayedOrigin.x, y: displayedOrigin.y)
             }
-            .scaleEffect(composedBook.scale * magnifyBy * tableLayout.itemScale)
-            .rotationEffect(.degrees(composedBook.rotation + rotateBy.degrees))
-            .position(x: displayedOrigin.x + dragOffset.width, y: displayedOrigin.y + dragOffset.height)
-            .gesture(dragMagnifyRotateGesture)
-        } else {
-            coverContent
-                .scaleEffect(composedBook.scale * tableLayout.itemScale)
-                .rotationEffect(.degrees(composedBook.rotation))
-                .position(x: displayedOrigin.x, y: displayedOrigin.y)
+        }
+        .onAppear(perform: refreshDisplayCover)
+        .onChange(of: composedBook.book?.coverImageData) { _, _ in
+            refreshDisplayCover()
         }
     }
 }

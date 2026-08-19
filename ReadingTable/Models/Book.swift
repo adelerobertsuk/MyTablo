@@ -38,6 +38,7 @@ final class CoffeeTableComposition: Identifiable {
     /// scale positions when the screen rotates or a different device opens it.
     var layoutWidth: Double = 0
     var layoutHeight: Double = 0
+    var tableID: UUID = UUID()
 
     init(name: String, items: [ComposedBook] = [], decorations: [Decoration] = [], createdDate: Date = Date(), surfaceImageName: String = "Kate-table-WhitePlaster") {
         self.name = name

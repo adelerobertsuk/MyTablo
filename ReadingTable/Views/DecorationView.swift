@@ -36,13 +36,13 @@ struct DecorationView: View {
     }
 
     private var visualSize: CGFloat {
-        if decoration.isStickyNote { return 110 }
+        if decoration.isStickyNote { return 148 }
         if isPaperSticker { return 176 }
         if isTableFavourite { return 132 }
         return 124
     }
     private var touchTargetSize: CGFloat {
-        if decoration.isStickyNote { return 120 }
+        if decoration.isStickyNote { return 176 }
         if decoration.isPhotoFrame { return 160 }
         if decoration.isCalendar { return 150 }
         if decoration.isWeather { return 120 }
@@ -88,7 +88,7 @@ struct DecorationView: View {
                 }
                 .frame(width: visualSize, height: visualSize)
                 .compositingGroup()
-                .shadow(color: .black.opacity(isSelected ? 0.35 : 0.28), radius: isSelected ? 9 : 6, x: 2, y: 4)
+                .shadow(color: .black.opacity(isSelected ? 0.38 : 0.22), radius: isSelected ? 10 : 7, x: 1, y: 5)
             } else if decoration.isPhotoFrame {
                 ZStack(alignment: .topLeading) {
                     if let data = decoration.photoImageData, let uiImage = UIImage(data: data) {
@@ -144,24 +144,30 @@ struct DecorationView: View {
         )
     }
 
+    private var cornerControlSize: CGFloat { decoration.isStickyNote ? 44 : 28 }
+
     private var deleteButton: some View {
         Button(action: onDelete) {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 16))
+                .font(.system(size: decoration.isStickyNote ? 28 : 16))
                 .foregroundColor(.white)
-                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 14, height: 14))
+                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: decoration.isStickyNote ? 22 : 14, height: decoration.isStickyNote ? 22 : 14))
         }
-        .offset(x: 6, y: -6)
+        .frame(width: cornerControlSize, height: cornerControlSize)
+        .contentShape(Rectangle())
+        .offset(x: decoration.isStickyNote ? 10 : 6, y: decoration.isStickyNote ? -10 : -6)
     }
 
     private var editButton: some View {
         Button(action: decoration.isStickyNote ? onEditText : onEditPhoto) {
             Image(systemName: "pencil.circle.fill")
-                .font(.system(size: 16))
+                .font(.system(size: decoration.isStickyNote ? 28 : 16))
                 .foregroundColor(.white)
-                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: 14, height: 14))
+                .background(Circle().fill(Color.black.opacity(0.6)).frame(width: decoration.isStickyNote ? 22 : 14, height: decoration.isStickyNote ? 22 : 14))
         }
-        .offset(x: -6, y: -6)
+        .frame(width: cornerControlSize, height: cornerControlSize)
+        .contentShape(Rectangle())
+        .offset(x: decoration.isStickyNote ? -10 : -6, y: decoration.isStickyNote ? -10 : -6)
     }
 
     private var clockStyleButton: some View {
@@ -224,7 +230,7 @@ struct DecorationView: View {
                 let stored = tableLayout.clampedStored(fromDisplay: display)
                 onUpdate(stored.x, stored.y, decoration.scale, decoration.rotation)
             }
-        return magnifyRotate.exclusively(before: drag)
+        return SimultaneousGesture(magnifyRotate, drag)
     }
 
     var body: some View {
@@ -239,8 +245,14 @@ struct DecorationView: View {
                         }
                         .exclusively(before: TapGesture(count: 1).onEnded {
                             onSelect()
-                        })
+                        }),
+                    including: decoration.isStickyNote ? .none : .all
                 )
+                .onTapGesture {
+                    if decoration.isStickyNote {
+                        onSelect()
+                    }
+                }
                 .overlay(alignment: .topTrailing) {
                     if isSelected {
                         deleteButton

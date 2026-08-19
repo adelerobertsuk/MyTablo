@@ -226,7 +226,6 @@ struct BookTileView: View {
                 .frame(maxWidth: .infinity)
                 .overlay {
                     if let imageData = book.coverImageData,
-                       BookLookupSession.isUsableCover(imageData),
                        let uiImage = UIImage(data: imageData) {
                         FillingCoverImage(uiImage: uiImage)
                     } else {

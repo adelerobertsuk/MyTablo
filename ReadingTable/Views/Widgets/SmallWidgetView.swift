@@ -50,7 +50,7 @@ enum WidgetSnapshot {
     }
 }
 
-/// Home-screen widget: the same picture as Share, shown in full.
+/// Home-screen widget: a cropped mini table, edge to edge.
 struct TableWidgetView: View {
     let tableImage: UIImage?
     private let palette = Palette.light
@@ -61,8 +61,9 @@ struct TableWidgetView: View {
             if let tableImage {
                 Image(uiImage: tableImage)
                     .resizable()
-                    .scaledToFit()
-                    .padding(8)
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             }
         }
     }

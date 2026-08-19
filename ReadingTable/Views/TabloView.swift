@@ -14,6 +14,7 @@ struct TabloView: View {
     @State private var controlsRevealed = false
     @State private var showLibrary = false
     @State private var showStyle = false
+    @State private var showTables = false
     @State private var sharePNGData: Data?
     @State private var showShareSheet = false
     @State private var canvasMetrics = CanvasMetrics.current
@@ -35,6 +36,16 @@ struct TabloView: View {
                 compositionViewModel: compositionViewModel,
                 onDismiss: { showStyle = false }
             )
+        }
+        .fullScreenCover(isPresented: $showTables, onDismiss: refreshShareImage) {
+            TablesView(
+                compositionViewModel: compositionViewModel,
+                onDismiss: { showTables = false }
+            )
+        }
+        .onChange(of: compositionViewModel.currentComposition?.tableID) {
+            compositionViewModel.ensureLayoutSize(matching: tableSize)
+            refreshShareImage()
         }
         .onAppear {
             compositionViewModel.ensureLayoutSize(matching: tableSize)
@@ -142,7 +153,7 @@ struct TabloView: View {
     }
 
     private var revealedControlBar: some View {
-        HStack(spacing: 28) {
+        HStack(spacing: isRegularLayout ? 24 : 16) {
             Button {
                 Haptics.tap()
                 showLibrary = true
@@ -171,6 +182,17 @@ struct TabloView: View {
                 }
             }
             .accessibilityLabel("Arrange")
+            .frame(minHeight: 44)
+
+            Button {
+                Haptics.tap()
+                showTables = true
+            } label: {
+                controlItem(symbol: "rectangle.stack", title: "Tables") {
+                    EmptyView()
+                }
+            }
+            .accessibilityLabel("Tables")
             .frame(minHeight: 44)
 
             if let sharePNGData {
@@ -213,7 +235,7 @@ struct TabloView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .frame(minWidth: isRegularLayout ? 64 : 56, minHeight: 44)
+        .frame(minWidth: isRegularLayout ? 56 : 48, minHeight: 44)
     }
 }
 
